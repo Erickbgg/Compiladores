@@ -10,4 +10,4 @@
 ### Releases:
 \> [Trabalho 1 - Scanner](https://github.com/lefperuch/Compiladores/releases/tag/1.0.0)
 <br>
-\> [Trabalho 2 - Scanner & Parser](https://github.com/lefperuch/Compiladores/releases/tag/2.0.0)
+\> [Trabalho 2 - Scanner & Parser](https://github.com/lefperuch/Compiladores/releases/tag/2.0.1)
