@@ -23,7 +23,8 @@
 %left LT GT LE GE EQ NEQ
 %left PLUS MINUS
 %left TIMES OVER
-%left ASSIGN
+
+%start program
 
 %%
     program: 

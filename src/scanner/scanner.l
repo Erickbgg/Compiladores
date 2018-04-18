@@ -4,6 +4,9 @@
 
 %option yylineno
 %option outfile = "scanner.c"
+%option noyywrap
+%option nounput
+%option noinput
 
 %x bl_comment
 

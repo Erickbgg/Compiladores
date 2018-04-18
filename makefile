@@ -12,5 +12,5 @@ build:
 	@rm -f scanner.c parser.c includes/parser.h
 
 clean:
-	@rm -f includes/parser.h parser.c scanner-c trab1 trab2
+	@rm -f src/includes/parser.h parser.c scanner-c trab1 trab2
 	
