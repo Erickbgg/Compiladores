@@ -1,5 +1,15 @@
 CC 		:= gcc
-LIBS	:= -lfl
+LIBS	:= 
+
+UNAME_S := $(shell uname -s)
+
+ifeq ($(UNAME_S),Linux)
+	LIBS += -lfl
+endif
+
+ifeq ($(UNAME_S),Darwin)
+	LIBS += -ll
+endif
 
 all: build
 
