@@ -166,19 +166,6 @@ void yyerror (const char *message) {
 }
 
 int main (int argc, char **argv) {
-    literals = initializeHashMap(101);
-
-    if(literals->lookup(literals->self, "teste") == NULL) {
-        printf("null\n");
-    }
-
-    struct lt_node_t *literal = create_literal("teste");
-    literals->insert(literals->self, "teste", literal);
-
-    if(literals->lookup(literals->self, "teste") != NULL) {
-        printf("ok");
-    }
-
     if(yyparse() == 0) {
         printf("PARSE SUCCESSFUL!\n");
     }
