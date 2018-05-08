@@ -5,22 +5,11 @@
 #include <string.h>
 
 /**
- * Verifica se um valor é NULL e, caso positivo, exibe um erro e encerra a aplicação.
- */
-#define nullpoerr(ptr) do { \
-    if(ptr == NULL) { \
-        fprintf(stderr, "%s.%d: O valor informado do ponteiro não pode ser nulo.", __FILE__, __LINE__); \
-        exit(-1); \
-    } \
-} while(0);
-
-/**
  * Armazena um elemento da tabela.
  */
 struct node_t {
     void *elem;
     char const *key;
-    ElemType type;
 
     struct node_t *next;
 };
@@ -36,6 +25,7 @@ struct hash_t {
 /* Internals */
 struct hash_t *hash_init (int);
 void *hash_lookup (struct hash_t *, char const *);
+int hash_insert (struct hash_t *, char const *, void *);
 
 unsigned int ap_hash (char const *);
 unsigned int pjw_hash (char const *);
@@ -53,6 +43,7 @@ HashMap *initializeHashMap (int size) {
 
     map->self = hash_init(size);
     map->lookup = hash_lookup;
+    map->insert = hash_insert;
 
     return map;
 }
@@ -90,6 +81,34 @@ void *hash_lookup (struct hash_t *hash, char const *key) {
     }
 
     return NULL;
+}
+
+int hash_insert (struct hash_t *hash, char const *key, void *elem) {
+    nullpoerr(hash);
+    nullpoerr(hash->table);
+
+    unsigned int pos = ap_hash(key) % hash->size;
+    struct node_t *new = calloc(1, sizeof *new);
+    
+    new->elem = elem;
+    new->key = strdup(key);
+
+    struct node_t *hash_elem = hash->table[pos];
+
+    if(hash_elem == NULL) {
+        hash->table[pos] = new;
+        return 0;
+    }
+
+    struct node_t *last = NULL;
+    for(struct node_t *tmp = hash_elem; tmp != NULL; last = tmp, tmp = tmp->next) {
+        if(strcmp(key, tmp->key) == 0) {
+            return -1;
+        }
+    }
+
+    last->next = new;
+    return 0;
 }
 
 unsigned int ap_hash (char const *key) {

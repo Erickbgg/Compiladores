@@ -6,8 +6,6 @@
 #ifndef _CC_HASH_TABLE_
 #define _CC_HASH_TABLE_
 
-#include "types/types.h"
-
 struct hash_t;
 
 typedef struct hash_interface {
@@ -18,10 +16,12 @@ typedef struct hash_interface {
 
     void *(*lookup)(struct hash_t *, char const *);
     
-    void (*insert)(struct hash_t *, char const *, void *);
+    int   (*insert)(struct hash_t *, char const *, void *);
 
     void *(*remove)(struct hash_t *, char const *);
 } HashMap;
+
+#include "types/types.h"
 
 HashMap *initializeHashMap (int);
 void deleteHashMap (HashMap *);
