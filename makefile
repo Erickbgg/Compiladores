@@ -18,7 +18,7 @@ all: build
 build:
 	@bison src/parser/parser.y && mv parser.h src/includes/parser.h
 	@flex src/scanner/scanner.l
-	@gcc -o trab2 parser.c scanner.c $(LIBS)
+	@gcc -o trab2 parser.c scanner.c src/common/types/types.c src/common/hash.c $(LIBS) -g
 	@rm -f scanner.c parser.c includes/parser.h
 
 clean:

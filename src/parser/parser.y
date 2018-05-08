@@ -11,11 +11,18 @@
 
 %{
     #include <stdio.h>
+
+    #include "src/common/types/types.h"
     
     extern int yylineno;
 
     int yylex (void);
     void yyerror (const char *);
+
+    LiteralsTable *literals;
+    VariablesTable *variables;
+    FunctionsTable *functions;
+
 %}
 
 %token IF ELSE INPUT OUTPUT INT VOID WRITE WHILE RETURN ASSIGN SEMI COMMA LPAREN RPAREN LBRACK RBRACK LBRACE RBRACE NUM ID STRING
@@ -159,6 +166,19 @@ void yyerror (const char *message) {
 }
 
 int main (int argc, char **argv) {
+    literals = initializeHashMap(101);
+
+    if(literals->lookup(literals->self, "teste") == NULL) {
+        printf("null\n");
+    }
+
+    struct lt_node_t *literal = create_literal("teste");
+    literals->insert(literals->self, "teste", literal);
+
+    if(literals->lookup(literals->self, "teste") != NULL) {
+        printf("ok");
+    }
+
     if(yyparse() == 0) {
         printf("PARSE SUCCESSFUL!\n");
     }
