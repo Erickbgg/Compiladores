@@ -43,6 +43,6 @@ typedef struct hash_interface {
 #include "types/types.h"
 
 HashMap *initializeHashMap (int);
-void deleteHashMap (HashMap *);
+void deleteHashMap (HashMap *, void (*)(void const *));
 
 #endif

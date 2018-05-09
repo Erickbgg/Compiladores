@@ -294,11 +294,6 @@ void yyerror (const char *message) {
     printf("PARSE ERROR (%d): %s\n", yylineno, message);
 }
 
-void free_table (HashMap *table, void (*free_fn)(void const *)) {
-    table->free(table->self, free_fn);
-    free(table);
-}
-
 int main (int argc, char **argv) {
     yydebug = 0;
     literals = initializeHashMap(101);
@@ -318,9 +313,9 @@ int main (int argc, char **argv) {
         functions->print(functions->self, print_function);
     }
 
-    free_table(literals, free_literal);
-    free_table(functions, free_function);
-    free_table(variables, free_variable);
+    deleteHashMap(literals, free_literal);
+    deleteHashMap(variables, free_variable);
+    deleteHashMap(functions, free_function);
 
     return 0;
 }

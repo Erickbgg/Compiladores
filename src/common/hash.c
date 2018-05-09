@@ -1,3 +1,9 @@
+/**
+ * Implementação de uma tabela hash genérica.
+ *
+ * @author Luiz Eduardo Favalessa Peruch <eduardo@favalessa.com.br>
+ */
+
 #include "hash.h"
 
 #include <stdio.h>
@@ -23,14 +29,14 @@ struct hash_t {
 };
 
 /* Internals */
-struct hash_t *hash_init (int);
-void *hash_lookup (struct hash_t *, char const *, void const *, int (*)(void const *, void const *));
-int hash_insert (struct hash_t *, char const *, void *);
-void hash_print (struct hash_t *, void (*)(void const *));
-void hash_free (struct hash_t *, void (*)(void const *));
+static struct hash_t *hash_init (int);
+static void *hash_lookup (struct hash_t *, char const *, void const *, int (*)(void const *, void const *));
+static int hash_insert (struct hash_t *, char const *, void *);
+static void hash_print (struct hash_t *, void (*)(void const *));
+static void hash_free (struct hash_t *, void (*)(void const *));
 
-unsigned int ap_hash (char const *);
-unsigned int pjw_hash (char const *);
+static unsigned int ap_hash (char const *);
+static unsigned int pjw_hash (char const *);
 
 HashMap *initializeHashMap (int size) {
     HashMap *map = calloc(1, sizeof *map);
@@ -46,11 +52,14 @@ HashMap *initializeHashMap (int size) {
     return map;
 }
 
-void deleteHashMap (HashMap *map) {
+void deleteHashMap (HashMap *map, void (*free_elem)(void const *)) {
+    nullpoerr(map);
+    nullpoerr(free_elem);
 
+    map->free(map->self, free_elem);
 }
 
-struct hash_t *hash_init (int size) {
+static struct hash_t *hash_init (int size) {
     struct hash_t *hash = calloc(1, sizeof *hash);
     
     nullpoerr(hash);
@@ -61,7 +70,7 @@ struct hash_t *hash_init (int size) {
     return hash;
 }
 
-void *hash_lookup (struct hash_t *hash, char const *key, void const *needle, int (*compare_elems)(void  const *, void const *)) {
+static void *hash_lookup (struct hash_t *hash, char const *key, void const *needle, int (*compare_elems)(void  const *, void const *)) {
     nullpoerr(hash);
     nullpoerr(hash->table);
 
@@ -91,7 +100,7 @@ void *hash_lookup (struct hash_t *hash, char const *key, void const *needle, int
     return NULL;
 }
 
-int hash_insert (struct hash_t *hash, char const *key, void *elem) {
+static int hash_insert (struct hash_t *hash, char const *key, void *elem) {
     nullpoerr(hash);
     nullpoerr(hash->table);
 
@@ -115,7 +124,7 @@ int hash_insert (struct hash_t *hash, char const *key, void *elem) {
     return 0;
 }
 
-void hash_print (struct hash_t *hash, void (*print_elem)(void const *)) {
+static void hash_print (struct hash_t *hash, void (*print_elem)(void const *)) {
     nullpoerr(hash);
     nullpoerr(print_elem);
 
@@ -131,7 +140,7 @@ void hash_print (struct hash_t *hash, void (*print_elem)(void const *)) {
     }
 }
 
-void hash_free (struct hash_t *hash, void (*free_fn)(void const *)) {
+static void hash_free (struct hash_t *hash, void (*free_fn)(void const *)) {
     nullpoerr(hash);
     nullpoerr(free_fn);
 
@@ -159,7 +168,7 @@ void hash_free (struct hash_t *hash, void (*free_fn)(void const *)) {
     free(hash);
 }
 
-unsigned int ap_hash (char const *key) {
+static unsigned int ap_hash (char const *key) {
     unsigned int hash = 0xAAAAAAAA;
 	unsigned int i    = 0;
 	int len = strlen(key);
@@ -171,7 +180,7 @@ unsigned int ap_hash (char const *key) {
 	return hash;
 }
 
-unsigned int pjw_hash (char const *key) {
+static unsigned int pjw_hash (char const *key) {
     unsigned int hash = 0; 
 	unsigned int test = 0;
 	unsigned int i = 0;
