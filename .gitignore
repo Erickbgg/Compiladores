@@ -2,4 +2,4 @@
 parser.h
 *.o
 .vscode
-
+/.DS_Store
