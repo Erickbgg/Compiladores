@@ -24,17 +24,13 @@ struct hash_t {
 
 /* Internals */
 struct hash_t *hash_init (int);
-void *hash_lookup (struct hash_t *, char const *);
+void *hash_lookup (struct hash_t *, char const *, void const *, int (*)(void const *, void const *));
 int hash_insert (struct hash_t *, char const *, void *);
+void hash_print (struct hash_t *, void (*)(void const *));
+void hash_free (struct hash_t *, void (*)(void const *));
 
 unsigned int ap_hash (char const *);
 unsigned int pjw_hash (char const *);
-
-/*    
-void (*insert)(struct hash_t *, char const *, void *elem, int (*)(void const *, void const *));
-
-void *(*remove)(struct hash_t *, char const *, int (*)(void const *, void const *));
-*/
 
 HashMap *initializeHashMap (int size) {
     HashMap *map = calloc(1, sizeof *map);
@@ -44,6 +40,8 @@ HashMap *initializeHashMap (int size) {
     map->self = hash_init(size);
     map->lookup = hash_lookup;
     map->insert = hash_insert;
+    map->print = hash_print;
+    map->free = hash_free;
 
     return map;
 }
@@ -63,7 +61,7 @@ struct hash_t *hash_init (int size) {
     return hash;
 }
 
-void *hash_lookup (struct hash_t *hash, char const *key) {
+void *hash_lookup (struct hash_t *hash, char const *key, void const *needle, int (*compare_elems)(void  const *, void const *)) {
     nullpoerr(hash);
     nullpoerr(hash->table);
 
@@ -75,8 +73,18 @@ void *hash_lookup (struct hash_t *hash, char const *key) {
     }
 
     for(struct node_t *elem = node; elem != NULL; elem = elem->next) {
-        if(strcmp(key, elem->key) == 0) {
-            return elem->elem;
+        // Caso uma função de busca seja informada, ela deve ser utilizada.
+        if(compare_elems != NULL) {
+            if(compare_elems(elem->elem, needle) == 0) {
+                return elem->elem;
+            }
+        }
+
+        // Do contrário, é adotado o comportamento padrão de buscar pela chave.
+        else {
+            if(strcmp(key, elem->key) == 0) {
+                return elem->elem;
+            }
         }
     }
 
@@ -101,14 +109,54 @@ int hash_insert (struct hash_t *hash, char const *key, void *elem) {
     }
 
     struct node_t *last = NULL;
-    for(struct node_t *tmp = hash_elem; tmp != NULL; last = tmp, tmp = tmp->next) {
-        if(strcmp(key, tmp->key) == 0) {
-            return -1;
-        }
-    }
+    for(struct node_t *tmp = hash_elem; tmp != NULL; last = tmp, tmp = tmp->next);
 
     last->next = new;
     return 0;
+}
+
+void hash_print (struct hash_t *hash, void (*print_elem)(void const *)) {
+    nullpoerr(hash);
+    nullpoerr(print_elem);
+
+    for(int i = 0, j = 0; i < hash->size; ++i) {
+        struct node_t *node = hash->table[i];
+
+        if(node != NULL) {
+            for(struct node_t *tmp = node; tmp != NULL; tmp = tmp->next) {
+                printf("Entry %d -- ", j++);
+                print_elem(tmp->elem);
+            }
+        }
+    }
+}
+
+void hash_free (struct hash_t *hash, void (*free_fn)(void const *)) {
+    nullpoerr(hash);
+    nullpoerr(free_fn);
+
+    for(int i = 0, j = 0; i < hash->size; ++i) {
+        struct node_t *node = hash->table[i];
+
+        if(node != NULL) {
+            struct node_t *prev = NULL;
+            for(struct node_t *tmp = node; tmp != NULL; prev = tmp, tmp = tmp->next) {
+                if(prev != NULL) {
+                    free_fn(prev->elem);
+                    free((void *) prev->key);
+                    free((void *) prev);
+                }
+            }
+
+            if(prev != NULL) {
+                free_fn(prev->elem);
+                free((void *) prev->key);
+                free((void *) prev);
+            }
+        }
+    }
+
+    free(hash);
 }
 
 unsigned int ap_hash (char const *key) {

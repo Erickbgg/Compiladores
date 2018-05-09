@@ -14,11 +14,30 @@ typedef struct hash_interface {
      */
     struct hash_t *self;
 
-    void *(*lookup)(struct hash_t *, char const *);
+    /**
+     * Método que procura um elemento na tabela.
+     */
+    void *(*lookup)(struct hash_t *, char const *, void const *, int (*)(void const *, void const *));
     
+    /**
+     * Método que insere um elemento na tabela.
+     */
     int   (*insert)(struct hash_t *, char const *, void *);
 
+    /**
+     * Método que remove um elemento da tabela.
+     */
     void *(*remove)(struct hash_t *, char const *);
+
+    /**
+     * Métood que imprime todos os elementos da tabela.
+     */
+    void  (*print)(struct hash_t *, void (*)(void const *));
+
+    /**
+     * 
+     */
+    void  (*free)(struct hash_t *, void (*)(void const *));
 } HashMap;
 
 #include "types/types.h"

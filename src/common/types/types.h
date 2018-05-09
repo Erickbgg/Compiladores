@@ -13,16 +13,17 @@
     } \
 } while(0);
 
-/**
- * Tipos de nós das tabelas internas.
- */
-typedef enum {
-    TB_LITERAL,
-    TB_VARIABLE,
-    TB_FUNCTION,
-} ElemType;
-
 #include "../hash.h"
+
+/**
+ * Redefinição do tipo YYSTYPE.
+ */
+struct yystype_t {
+    char text[128];
+    int lval;
+};
+
+typedef struct yystype_t yystype_t;
 
 /**
  * Tipos de variáveis possíveis num programa C-Minus.
@@ -47,6 +48,8 @@ struct lt_node_t {
     const char *value;
 };
 
+typedef struct lt_node_t lt_node_t;
+
 /**
  * Estrutura utilizada para armazenar uma variável
  * na tabela de variáveis do compilador.
@@ -64,6 +67,8 @@ struct vt_node_t {
     VariableType type;
 };
 
+typedef struct vt_node_t vt_node_t;
+
 /**
  * Estrutura utilizada para armazenar uma função
  * na tabela de funções do compilador.
@@ -77,6 +82,8 @@ struct ft_node_t {
     unsigned int line;
     unsigned int arity;
 };
+
+typedef struct ft_node_t ft_node_t;
 
 /**
  * @param value Literal encontrado durante parsing.
@@ -102,5 +109,43 @@ struct vt_node_t *create_variable (const char *, unsigned int, unsigned int, uns
  * @return              Um nó contendo as informações da função.
  */
 struct ft_node_t *create_function (const char *, unsigned int, unsigned int);
+
+/**
+ * @param left      Nó do tipo {@code struct vt_node_t} que se deseja comparar.
+ * @param right     Nó do tipo {@code struct vt_node_t} que se deseja comparar.
+ *
+ * @return resultado da comparação.
+ */
+int compare_variables (void const*, void const *);
+
+/**
+ * @param literal   Imprime os dados de um literal na tela.
+ */
+void print_literal (void const *);
+
+/**
+ * @param var       Imprime os dados de uma variável na tela.
+ */
+void print_variable (void const *);
+
+/**
+ * @param fn        Imprime os dados de uma função na tela.
+ */
+void print_function (void const *);
+
+/**
+ * @param literal   Libera a memória alocada para um nó literal.
+ */
+void free_literal (void const *);
+
+/**
+ * @param var       Libera a memória alocada para um nó de variável.
+ */
+void free_variable (void const *);
+
+/**
+ * @param fn        Libera a memória alocada para um nó de função.
+ */
+void free_function (void const *);
 
 #endif

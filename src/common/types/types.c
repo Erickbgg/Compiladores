@@ -37,10 +37,10 @@ struct vt_node_t *create_variable (const char *identifier, unsigned int line, un
 
     switch(type) {
         case VT_INT:
-            variable->size = -1;
+            variable->size = 0;
             break;
         case VT_ARRAY_POINTER:
-            variable->size = 0;
+            variable->size = -1;
             break;
         case VT_ARRAY:
             variable->size = size;
@@ -67,4 +67,50 @@ struct ft_node_t *create_function (const char *identifier, unsigned int line, un
     function->arity = arity;
 
     return function;
+}
+
+int compare_variables (const void *left, const void *right) {
+    vt_node_t *v1 = (vt_node_t *)left;
+    vt_node_t *v2 = (vt_node_t *)right;
+
+    return strcmp(v1->identifier, v2->identifier) == 0 ? v1->scope != v2->scope : 1;
+}
+
+void print_variable (void const *var) {
+    vt_node_t *v = (vt_node_t *)var;
+
+    printf("name: %s, line: %d, scope: %d, size: %d\n", v->identifier, v->line, v->scope, v->size);
+}
+
+void print_function (void const *fn) {
+    ft_node_t *f = (ft_node_t *)fn;
+
+    printf("name: %s, line: %d, arity: %d\n", f->identifier, f->line, f->arity);
+}
+
+void print_literal (void const *literal) {
+    lt_node_t *lt = (lt_node_t *)literal;
+
+    printf("%s\n", lt->value);
+}
+
+void free_literal (void const *literal) {
+    lt_node_t *lt = (lt_node_t *) literal;
+
+    free((void *) lt->value);
+    free(lt);
+}
+
+void free_variable (void const *variable) {
+    vt_node_t *var = (vt_node_t *) variable;
+
+    free((void *) var->identifier);
+    free(var);
+}
+
+void free_function (void const *function) {
+    ft_node_t *fn = (ft_node_t *) function;
+
+    free((void *) fn->identifier);
+    free(fn);
 }
