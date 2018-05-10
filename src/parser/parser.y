@@ -302,9 +302,9 @@ void yyerror (const char *message) {
 
 int main (int argc, char **argv) {
     yydebug = 0;
-    literals = initializeHashMap(101);
-    functions = initializeHashMap(101);
-    variables = initializeHashMap(101);
+    literals = initializeHashMap(256 + 27);
+    functions = initializeHashMap(256 + 27);
+    variables = initializeHashMap(256 + 27);
     
     if(yyparse() == 0) {
         printf("PARSE SUCCESSFUL!\n");
