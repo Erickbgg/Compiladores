@@ -57,6 +57,7 @@ void deleteHashMap (HashMap *map, void (*free_elem)(void const *)) {
     nullpoerr(free_elem);
 
     map->free(map->self, free_elem);
+    free(map);
 }
 
 static struct hash_t *hash_init (int size) {
@@ -165,6 +166,7 @@ static void hash_free (struct hash_t *hash, void (*free_fn)(void const *)) {
         }
     }
 
+    free(hash->table);
     free(hash);
 }
 
