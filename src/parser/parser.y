@@ -41,7 +41,13 @@
     #define ERR_UNDEFINED_FUNCTION          "SEMANTIC ERROR (%d): function '%s' was not declared.\n"
     #define ERR_FN_CALL_WRONG_ARGS_NUMBER   "SEMANTIC ERROR (%d): function '%s' was called with %d arguments but declared with %d parameters.\n"
 
-    #define print_error(...) do { fprintf(stdout, __VA_ARGS__); exit(-1); } while(0);
+    #define print_error(...) do { \
+        fprintf(stdout, __VA_ARGS__); \
+        deleteHashMap(literals, free_literal); \
+        deleteHashMap(variables, free_variable); \
+        deleteHashMap(functions, free_function); \
+        exit(-1); \
+    } while(0);
 
     vt_node_t *check_and_create_variable (char const *, int, int, int, VariableType);
     ft_node_t *check_and_create_function (char const *, int, int);
@@ -153,40 +159,40 @@
             vt_node_t *var = create_variable($1.text, yylineno, current_scope, 0, VT_INT);
 
             if(variables->lookup(variables->self, $1.text, var, compare_variables) == NULL) {
-                free(var);
+                free_variable(var);
                 print_error(ERR_UNDEFINED_VARIABLE, yylineno, $1.text);
             }
 
-            free(var);
+            free_variable(var);
         } 
         | ID LBRACK NUM RBRACK {
             vt_node_t *var = create_variable($1.text, yylineno, current_scope, 0, VT_INT);
 
             if(variables->lookup(variables->self, $1.text, var, compare_variables) == NULL) {
-                free(var);
+                free_variable(var);
                 print_error(ERR_UNDEFINED_VARIABLE, yylineno, $1.text);
             }
 
-            free(var);
+            free_variable(var);
         } 
         | ID LBRACK ID RBRACK {
             vt_node_t *var = create_variable($1.text, yylineno, current_scope, 0, VT_ARRAY);
             vt_node_t *idx = create_variable($3.text, yylineno, current_scope, 0, VT_INT);
 
             if(variables->lookup(variables->self, $1.text, var, compare_variables) == NULL) {
-                free(var);
-                free(idx);
+                free_variable(var);
+                free_variable(idx);
                 print_error(ERR_UNDEFINED_VARIABLE, yylineno, $1.text);
             }
 
             if(variables->lookup(variables->self, $3.text, idx, compare_variables) == NULL) {
-                free(var);
-                free(idx);
+                free_variable(var);
+                free_variable(idx);
                 print_error(ERR_UNDEFINED_VARIABLE, yylineno, $3.text);
             }
 
-            free(var);
-            free(idx);
+            free_variable(var);
+            free_variable(idx);
         };
     
     if-stmt:
@@ -283,7 +289,7 @@ vt_node_t *check_and_create_variable (char const *identifier, int line, int scop
     vt_node_t *new_variable = create_variable(identifier, line, scope, size, type);
 
     if((var = variables->lookup(variables->self, identifier, new_variable, compare_variables)) != NULL) {
-        free(new_variable);
+        free_variable(new_variable);
         print_error(ERR_VARIABLE_ALREADY_DEFINED, yylineno, ((vt_node_t *)var)->identifier, ((vt_node_t *)var)->line);
     }
 
