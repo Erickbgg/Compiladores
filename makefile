@@ -1,5 +1,6 @@
 CC 		:= gcc
 LIBS	:= 
+SOURCES	:= parser.c scanner.c src/common/types/function.c src/common/types/variable.c src/common/types/literal.c src/common/hash.c
 
 UNAME_S := $(shell uname -s)
 
@@ -18,7 +19,7 @@ all: build
 build:
 	@bison --debug src/parser/parser.y && mv parser.h src/includes/parser.h
 	@flex src/scanner/scanner.l
-	@gcc -o trab3 parser.c scanner.c src/common/types/types.c src/common/hash.c $(LIBS) -g
+	@gcc -o trab3 $(SOURCES) $(LIBS) -g
 	@rm -f scanner.c parser.c includes/parser.h
 
 clean:
