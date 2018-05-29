@@ -302,13 +302,13 @@ int main (int argc, char **argv) {
     if(yyparse() == 0) {
         printf("PARSE SUCCESSFUL!\n");
 
-        printf("\nLiterals Table:\n");
+        printf("\nLiterals table:\n");
         literals->print(literals->self, print_literal);
 
-        printf("\n\nVariables Table:\n");
+        printf("\n\nVariables table:\n");
         variables->print(variables->self, print_variable);
 
-        printf("\n\nFunctions Table:\n");
+        printf("\n\nFunctions table:\n");
         functions->print(functions->self, print_function);
     }
 

@@ -15,7 +15,7 @@
     } \
 } while(0);
 
-#include "../hash.h"
+#include "../hash/hash.h"
 
 /**
  * Redefinição do tipo YYSTYPE.

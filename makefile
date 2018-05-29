@@ -1,8 +1,13 @@
 CC 		:= gcc
 LIBS	:= 
-SOURCES	:= parser.c scanner.c src/common/types/function.c src/common/types/variable.c src/common/types/literal.c src/common/hash.c
-
 UNAME_S := $(shell uname -s)
+
+EXEC	:= trab3
+BASEDIR	:= src
+MODULES	:= common/types common/hash
+SCANNER	:= $(addprefix $(BASEDIR)/,scanner/scanner.l)
+PARSER	:= $(addprefix $(BASEDIR)/,parser/parser.y)
+OBJS	:= $(addprefix $(BASEDIR)/,$(MODULES))
 
 ifeq ($(UNAME_S),Linux)
 	LIBS += -lfl
@@ -17,11 +22,14 @@ all: build
 .PHONY: clean
 
 build:
-	@bison --debug src/parser/parser.y && mv parser.h src/includes/parser.h
-	@flex src/scanner/scanner.l
-	@gcc -o trab3 $(SOURCES) $(LIBS) -g
+	@bison --debug $(PARSER) && mv parser.h src/includes/parser.h
+	@flex $(SCANNER)
+	@for dir in $(OBJS); do (cd $$dir > /dev/null; ${MAKE} all > /dev/null); done
+	@gcc -o $(EXEC) parser.c scanner.c $(addsuffix /*.o, $(OBJS)) $(LIBS)
 	@rm -f scanner.c parser.c includes/parser.h
+	
 
 clean:
-	@rm -f src/includes/parser.h parser.c scanner-c trab1 trab2 trab3
+	@for dir in $(OBJS); do (cd $$dir; rm -f *.o;); done
+	@rm -f src/includes/parser.h parser.c scanner-c trab1 trab2 trab3 trab4
 	

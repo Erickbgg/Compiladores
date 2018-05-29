@@ -40,7 +40,7 @@ typedef struct hash_interface {
     void  (*free)(struct hash_t *, void (*)(void const *));
 } HashMap;
 
-#include "types/types.h"
+#include "../types/types.h"
 
 HashMap *initializeHashMap (int);
 void deleteHashMap (HashMap *, void (*)(void const *));
