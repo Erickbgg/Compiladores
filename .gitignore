@@ -1,3 +1,6 @@
 /trab*
 parser.h
-
+*.o
+.vscode
+/.DS_Store
+tests/.DS_Store
