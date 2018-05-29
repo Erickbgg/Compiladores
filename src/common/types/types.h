@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 /**
  * Verifica se um valor é NULL e, caso positivo, exibe um erro e encerra a aplicação.

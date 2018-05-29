@@ -48,9 +48,14 @@
         deleteHashMap(functions, free_function); \
         exit(-1); \
     } while(0);
-
+ 
+    void check_function_call (char const *);
+    void check_undefined_variable (char const *, int);
+    bool function_exists (char const *, ft_node_t **);
+    bool variable_exists (char const *, int, vt_node_t **);
     vt_node_t *check_and_create_variable (char const *, int, int, int, VariableType);
     ft_node_t *check_and_create_function (char const *, int, int);
+    lt_node_t *check_and_create_literal (char const *);
 %}
 
 %token IF ELSE INPUT OUTPUT INT VOID WRITE WHILE RETURN 
@@ -80,12 +85,7 @@
         func-header func-body { ++current_scope; };
 
     func-header:
-        ret-type ID LPAREN params RPAREN {
-            void *fn = (void *) check_and_create_function($2.text, yylineno, fn_params_decl);
-
-            functions->insert(functions->self, $2.text, fn);
-            fn_params_decl = 0;
-        };
+        ret-type ID LPAREN params RPAREN { check_and_create_function($2.text, yylineno, fn_params_decl); };
 
     func-body:
         LBRACE opt-var-decl opt-stmt-list RBRACE;
@@ -111,34 +111,16 @@
         param;
     
     param:
-        INT ID {
-            void *var = check_and_create_variable($2.text, yylineno, current_scope, 0, VT_INT);
-
-            ++fn_params_decl;
-            variables->insert(variables->self, $2.text, var);
-        } 
-        | INT ID LBRACK RBRACK {
-            void *var = check_and_create_variable($2.text, yylineno, current_scope, 0, VT_ARRAY_POINTER);
-
-            ++fn_params_decl;
-            variables->insert(variables->self, $2.text, var);
-        };
+        INT ID { check_and_create_variable($2.text, yylineno, current_scope, 0, VT_INT); ++fn_params_decl; } 
+        | INT ID LBRACK RBRACK { check_and_create_variable($2.text, yylineno, current_scope, 0, VT_ARRAY_POINTER); ++fn_params_decl; };
     
     var-decl-list: 
         var-decl-list var-decl |
         var-decl;
     
     var-decl:
-        INT ID SEMI {
-            void *var = check_and_create_variable($2.text, yylineno, current_scope, 0, VT_INT);
-
-            variables->insert(variables->self, $2.text, var);
-        } 
-        | INT ID LBRACK NUM RBRACK SEMI {
-            void *var = check_and_create_variable($2.text, yylineno, current_scope, $4.lval, VT_ARRAY);
-
-            variables->insert(variables->self, $2.text, var);
-        };
+        INT ID SEMI { check_and_create_variable($2.text, yylineno, current_scope, 0, VT_INT); } 
+        | INT ID LBRACK NUM RBRACK SEMI { check_and_create_variable($2.text, yylineno, current_scope, $4.lval, VT_ARRAY); };
     
     stmt-list:
         stmt-list stmt |
@@ -155,45 +137,9 @@
         lval ASSIGN arith-expr SEMI;
 
     lval:
-        ID {
-            vt_node_t *var = create_variable($1.text, yylineno, current_scope, 0, VT_INT);
-
-            if(variables->lookup(variables->self, $1.text, var, compare_variables) == NULL) {
-                free_variable(var);
-                print_error(ERR_UNDEFINED_VARIABLE, yylineno, $1.text);
-            }
-
-            free_variable(var);
-        } 
-        | ID LBRACK NUM RBRACK {
-            vt_node_t *var = create_variable($1.text, yylineno, current_scope, 0, VT_INT);
-
-            if(variables->lookup(variables->self, $1.text, var, compare_variables) == NULL) {
-                free_variable(var);
-                print_error(ERR_UNDEFINED_VARIABLE, yylineno, $1.text);
-            }
-
-            free_variable(var);
-        } 
-        | ID LBRACK ID RBRACK {
-            vt_node_t *var = create_variable($1.text, yylineno, current_scope, 0, VT_ARRAY);
-            vt_node_t *idx = create_variable($3.text, yylineno, current_scope, 0, VT_INT);
-
-            if(variables->lookup(variables->self, $1.text, var, compare_variables) == NULL) {
-                free_variable(var);
-                free_variable(idx);
-                print_error(ERR_UNDEFINED_VARIABLE, yylineno, $1.text);
-            }
-
-            if(variables->lookup(variables->self, $3.text, idx, compare_variables) == NULL) {
-                free_variable(var);
-                free_variable(idx);
-                print_error(ERR_UNDEFINED_VARIABLE, yylineno, $3.text);
-            }
-
-            free_variable(var);
-            free_variable(idx);
-        };
+        ID { check_undefined_variable($1.text, current_scope); } 
+        | ID LBRACK NUM RBRACK { check_undefined_variable($1.text, current_scope); }
+        | ID LBRACK ID RBRACK { check_undefined_variable($1.text, current_scope); check_undefined_variable($3.text, current_scope); };
     
     if-stmt:
         IF LPAREN bool-expr RPAREN block |
@@ -221,29 +167,10 @@
         OUTPUT LPAREN arith-expr RPAREN;
     
     write-call:
-        WRITE LPAREN STRING {
-            if(literals->lookup(literals->self, $3.text, NULL, NULL) == NULL) {
-                lt_node_t *literal = create_literal($3.text);
-                
-                literals->insert(literals->self, $3.text, literal);
-            }
-        } RPAREN;
+        WRITE LPAREN STRING RPAREN { check_and_create_literal($3.text); };
     
     user-func-call:
-        ID LPAREN opt-arg-list RPAREN {
-            void *decl;
-            if((decl = functions->lookup(functions->self, $1.text, NULL, NULL)) == NULL) {
-                print_error(ERR_UNDEFINED_FUNCTION, yylineno, $1.text);
-            }
-
-            ft_node_t *fn = (ft_node_t *) decl;
-
-            if(fn_params_call != fn->arity) {
-                print_error(ERR_FN_CALL_WRONG_ARGS_NUMBER, yylineno, fn->identifier, fn_params_call, fn->arity);
-            }
-
-            fn_params_call = 0;
-        };
+        ID LPAREN opt-arg-list RPAREN { check_function_call($1.text); fn_params_call = 0; };
     
     opt-arg-list:
         %empty |
@@ -274,26 +201,92 @@
 
 %%
 
-ft_node_t *check_and_create_function (char const *identifier, int line, int arity) {
-    void *fn;
-    
-    if((fn = functions->lookup(functions->self, identifier, NULL, NULL)) != NULL) {
-        print_error(ERR_FUNCTION_ALREADY_DEFINED, yylineno, ((ft_node_t *)fn)->identifier, ((ft_node_t *)fn)->line);
+void check_function_call (char const *identifier) {
+    ft_node_t *fn;
+
+    if(function_exists(identifier, &fn) == false) {
+        print_error(ERR_UNDEFINED_FUNCTION, yylineno, identifier);
     }
 
-    return create_function(identifier, line, arity);
+    if(fn_params_call != fn->arity) {
+        print_error(ERR_FN_CALL_WRONG_ARGS_NUMBER, yylineno, fn->identifier, fn_params_call, fn->arity);
+    }
+}
+
+void check_undefined_variable (char const *identifier, int scope) {
+    if(variable_exists(identifier, scope, NULL) == false) {
+        print_error(ERR_UNDEFINED_VARIABLE, yylineno, identifier);
+    }
+}
+
+bool variable_exists (char const *identifier, int scope, vt_node_t **out_var) {
+    void *var;
+    vt_node_t *new_var = create_variable(identifier, 0, scope, 0, 0);
+
+    if((var = variables->lookup(variables->self, identifier, new_var, compare_variables)) != NULL) {
+        if(out_var != NULL) {
+            *out_var = (vt_node_t *)var;
+        }
+
+        free(new_var);
+        return true;
+    }
+
+    free(new_var);
+    return false;
+}
+
+bool function_exists (char const *identifier, ft_node_t **out_fn) {
+    void *fn;
+
+    if((fn = functions->lookup(functions->self, identifier, NULL, NULL)) != NULL) {
+        if(out_fn != NULL) {
+            *out_fn = (ft_node_t *)fn;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+ft_node_t *check_and_create_function (char const *identifier, int line, int arity) {
+    ft_node_t *fn;
+
+    if(function_exists(identifier, &fn) == true) {
+        print_error(ERR_FUNCTION_ALREADY_DEFINED, yylineno, fn->identifier, fn->line);
+    }
+
+    fn = create_function(identifier, line, arity);
+
+    functions->insert(functions->self, identifier, fn);
+    fn_params_decl = 0;
+
+    return fn;
 }
 
 vt_node_t *check_and_create_variable (char const *identifier, int line, int scope, int size, VariableType type) {
-    void *var;
-    vt_node_t *new_variable = create_variable(identifier, line, scope, size, type);
+    vt_node_t *var;
 
-    if((var = variables->lookup(variables->self, identifier, new_variable, compare_variables)) != NULL) {
-        free_variable(new_variable);
-        print_error(ERR_VARIABLE_ALREADY_DEFINED, yylineno, ((vt_node_t *)var)->identifier, ((vt_node_t *)var)->line);
+    if(variable_exists(identifier, scope, &var) == true) {
+        print_error(ERR_VARIABLE_ALREADY_DEFINED, yylineno, var->identifier, var->line);
     }
 
-    return new_variable;
+    var = create_variable(identifier, line, scope, size, type);
+    variables->insert(variables->self, identifier, var);
+
+    return var;
+}
+
+lt_node_t *check_and_create_literal (char const *text) {
+    lt_node_t *literal;
+
+    if((literal = literals->lookup(literals->self, text, NULL, NULL)) == NULL) {
+        literal = create_literal(text);
+        literals->insert(literals->self, text, literal);
+    }
+
+    return literal;
 }
 
 void yyerror (const char *message) {
