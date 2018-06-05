@@ -27,6 +27,12 @@ struct yystype_t {
 
 typedef struct yystype_t yystype_t;
 
+typedef enum {
+    NT_NODE_NUM
+} ASTNodeType;
+
+#include "../tree/tree.h"
+
 typedef HashMap LiteralsTable;
 typedef HashMap VariablesTable;
 typedef HashMap FunctionsTable;

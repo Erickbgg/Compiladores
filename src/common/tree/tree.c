@@ -5,47 +5,60 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#include "ntree.h"
+#include "tree.h"
 
-#define NUM_ARGS (...) ((sizeof ((int[])__VA_ARGS__))/sizeof(int))
-#define _ntree_append()
+struct ast_t {
+    ASTNodeType *type;
+    void *data;
 
-struct ntree_t {
-    //TODO: adicionar NTreeNodeType
-    void *elem;
-
-    NTree *children;
-    NTree *last;
+    AST *children;
+    AST *last;
 };
 
+//void (*print)(struct ast_interface *, void (*)(void const *));
+//void (*free)(struct ast_interface *, void (*)(void const *));
+//bool (*isLeaf)(struct ast_interface*);
+
+static struct ast_t *_ast_init (ASTNodeType type, void *data) {
+    struct ast_t *self = calloc(1, sizeof *self);
+
+    self->type = type;
+    self->data = data;
+
+    return self;
+}
+
+AST *initializeAST (ASTNodeType type, void *data, unsigned int count, ...) {
+    AST *ast = calloc(1, sizeof *ast);
+
+    nullpoerr(ast);
+
+    ast->self = _ast_init(type, data);
+
+    if(count > 0) {
+        
+    }
+}
+
+void deleteAST (AST *ast) {
+
+}
+
 /*
-
- struct ntree_t;
-
-typedef struct ntree_interface {
-
-struct ntree_t *self;
-
-void (*append)(struct ntree_t *, unsigned int, ...);
-
-void (*print)(struct ntree_t *, void (*)(void const *));
-
-void (*free)(struct ntree_t *, void (*)(void const *));
-} NTree;
 
 NTree *initializeNTree (void);
 void deleteNTree (struct ntree_interface *, void (*)(void const *));
 
-*/
+
 
 struct ntree_t *ntree_init (void);
 void ntree_append (struct ntree_interface *, unsigned int, ...);
 static void vntree_append (struct ntree_interface *, unsigned int, va_list);
 
-NTree *initializeNTree (/*NTreeNodeType type, */unsigned int count, ...) {
+NTree *initializeNTree (NTreeNodeType type, void *data, unsigned int count, ...) {
     NTree *ntree = calloc(1, sizeof *ntree);
 
-    //nullpoerr(ntree);
+    nullpoerr(ntree);
 
     ntree->self = ntree_init();
     ntree->append = ntree_append;
@@ -99,3 +112,4 @@ void ntree_append (struct ntree_interface *tree, unsigned int count, ...) {
 
     va_end(args);
 }
+*/
