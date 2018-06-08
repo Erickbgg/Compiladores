@@ -36,5 +36,5 @@ dot: build
 
 clean:
 	@for dir in $(OBJS); do (cd $$dir; rm -f *.o;); done
-	@rm -f src/includes/parser.h parser.c scanner.c trab1 trab2 trab3 trab4
+	@rm -f src/includes/parser.h parser.c scanner-c trab1 trab2 trab3 trab4
 	
