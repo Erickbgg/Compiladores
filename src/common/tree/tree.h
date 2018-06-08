@@ -5,9 +5,50 @@
 #ifndef CC_NTREE_H
 #define CC_NTREE_H
 
-#define COUNT_ARGS(...) (sizeof((unsigned int[]){0, ##__VA_ARGS__})/sizeof(unsigned int) - 1)
-
 #include <stdbool.h>
+
+typedef enum {
+    AST_NODE_ASSIGN = 0,
+    AST_NODE_NUM,
+    AST_NODE_STRING,
+    AST_NODE_ID,
+    AST_NODE_OVER,
+    AST_NODE_TIMES,
+    AST_NODE_MINUS,
+    AST_NODE_PLUS,
+    AST_NODE_NEQ,
+    AST_NODE_EQ,
+    AST_NODE_GE,
+    AST_NODE_GT,
+    AST_NODE_LE,
+    AST_NODE_LT,
+    AST_NODE_WHILE,
+    AST_NODE_RETURN, 
+    AST_NODE_IF,
+    AST_NODE_ELSE,
+    AST_NODE_INPUT,
+    AST_NODE_WRITE,
+    AST_NODE_OUTPUT,
+
+    AST_NODE_FUNC_LIST,
+    AST_NODE_FUNC_DECL,
+    AST_NODE_FUNC_HEADER,
+    AST_NODE_FUNC_BODY,
+    AST_NODE_FUNC_NAME,
+    AST_NODE_FUNC_CALL,
+    AST_NODE_PARAM_LIST,
+    AST_NODE_VAR_LIST,
+    AST_NODE_VAR_DECL,
+    AST_NODE_ARG_LIST,
+    AST_NODE_STMT_LIST,
+    AST_NODE_BLOCK,
+    AST_NODE_VAR_USE,
+    AST_NODE_PARAM,
+    AST_NODE_VAR_DECL_LIST,
+
+    AST_NODE_ARITH_EXPR,
+    AST_NODE_BOOL_EXPR,
+} ASTNodeType;
 
 struct ast_t;
 
@@ -23,9 +64,9 @@ typedef struct ast_interface {
     struct ast_interface *next_sibiling;
 
     /**
-     * Exibe informações sobre a árvore na tela.
+     * Adiciona filhos ao nó da árvore
      */
-    void (*print)(struct ast_interface *, void (*)(void const *));
+    void (*append)(struct ast_interface *, struct ast_interface *);
 
     /**
      * Libera a memória alocada para todos os elementos da árvore.
@@ -40,10 +81,15 @@ typedef struct ast_interface {
 
 #include "../types/types.h"
 
-#define INITIALIZE_AST_LEAF(type, ...)        initializeAST(type, NULL, COUNT_ARGS(__VA_ARGS__), ##__VA_ARGS__)
-#define INITIALIZE_AST_NODE(type, data, ...)  initializeAST(type, data, COUNT_ARGS(__VA_ARGS__), ##__VA_ARGS__)
+#define __COUNT_ARGS(...) (sizeof((AST *[]){ NULL, ##__VA_ARGS__})/sizeof(AST *) - 1)
+
+#define AST_INITIALIZE_LEAF(type, data, ...)    initializeAST(type, data, 0)
+#define AST_INITIALIZE_NODE(type, ...)          initializeAST(type, NULL, __COUNT_ARGS(__VA_ARGS__), ##__VA_ARGS__)
+#define AST_GET_NODE_DATA(node)                 getASTNodeData(node)
 
 AST *initializeAST (ASTNodeType, void *, unsigned int, ...);
 void deleteAST (struct ast_interface *);
+void printAST (struct ast_interface *);
+void *getASTNodeData (struct ast_interface *);
 
 #endif

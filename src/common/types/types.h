@@ -16,21 +16,6 @@
 } while(0);
 
 #include "../hash/hash.h"
-
-/**
- * Redefinição do tipo YYSTYPE.
- */
-struct yystype_t {
-    char text[128];
-    int lval;
-};
-
-typedef struct yystype_t yystype_t;
-
-typedef enum {
-    NT_NODE_NUM
-} ASTNodeType;
-
 #include "../tree/tree.h"
 
 typedef HashMap LiteralsTable;
