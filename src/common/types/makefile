@@ -5,4 +5,4 @@ OBJ = *.c
 all: prog
 
 prog:
-	$(CC) -c $(OBJ)
+	$(CC) -c $(OBJ) -g
