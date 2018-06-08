@@ -25,9 +25,9 @@ all: build
 build:
 	@bison --debug $(PARSER) && mv parser.h src/includes/parser.h
 	@flex $(SCANNER)
-	@for dir in $(OBJS); do (cd $$dir > /dev/null; ${MAKE} all); done
-	gcc -o $(EXEC) parser.c scanner.c $(addsuffix /*.o, $(OBJS)) $(LIBS) --std=c99 -g
-	#@rm -f scanner.c parser.c includes/parser.h
+	@for dir in $(OBJS); do (cd $$dir > /dev/null; ${MAKE} all > /dev/null); done
+	@gcc -o $(EXEC) parser.c scanner.c $(addsuffix /*.o, $(OBJS)) $(LIBS) --std=c99 -g
+	@rm -f scanner.c parser.c includes/parser.h
 
 dot: build
 	./trab4 < tests/trab3/in/$(TESTFILE)
@@ -36,5 +36,5 @@ dot: build
 
 clean:
 	@for dir in $(OBJS); do (cd $$dir; rm -f *.o;); done
-	@rm -f src/includes/parser.h parser.c scanner-c trab1 trab2 trab3 trab4
+	@rm -f src/includes/parser.h parser.c scanner.c trab1 trab2 trab3 trab4
 	

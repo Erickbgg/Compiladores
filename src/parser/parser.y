@@ -292,11 +292,11 @@ bool variable_exists (char const *identifier, int scope, vt_node_t **out_var) {
             *out_var = (vt_node_t *)var;
         }
 
-        free(new_var);
+        free_variable(new_var);
         return true;
     }
 
-    free(new_var);
+    free_variable(new_var);
     return false;
 }
 
