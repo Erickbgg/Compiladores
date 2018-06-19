@@ -1,6 +1,10 @@
 %{
+    #include "src/common/tree/tree.h"
     #include "src/common/types/types.h"
     #include "src/includes/parser.h"
+
+    extern int lval;
+    extern char vf_name[128];
 %}
 
 %option yylineno
@@ -54,9 +58,9 @@ return                          { return RETURN; }
 \{                              { return LBRACE; }
 \}                              { return RBRACE; }
 
-[0-9]+|0                        { yylval.lval = atoi(yytext); return NUM; }
-[a-zA-Z][a-zA-Z0-9]*            { strcpy(yylval.text, yytext); return ID; }
-\"([^\"]*)\"                    { strcpy(yylval.text, yytext); return STRING; }
+[0-9]+|0                        { lval = atoi(yytext); return NUM; }
+[a-zA-Z][a-zA-Z0-9]*            { strcpy(vf_name, yytext); return ID; }
+\"([^\"]*)\"                    { strcpy(vf_name, yytext); return STRING; }
 
 .                               { printf("SCANNING ERROR (%d): Unknown symbol %s\n", yylineno, yytext); exit(-1); }
 

@@ -15,17 +15,8 @@
     } \
 } while(0);
 
-#include "../hash.h"
-
-/**
- * Redefinição do tipo YYSTYPE.
- */
-struct yystype_t {
-    char text[128];
-    int lval;
-};
-
-typedef struct yystype_t yystype_t;
+#include "../hash/hash.h"
+#include "../tree/tree.h"
 
 typedef HashMap LiteralsTable;
 typedef HashMap VariablesTable;

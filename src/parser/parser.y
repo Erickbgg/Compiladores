@@ -9,7 +9,7 @@
 /* Enables full lookahead correction */
 %define parse.lac full
 
-%define api.value.type { yystype_t }
+%define api.value.type { AST * }
 
 %{
     #define YYDEBUG 1
@@ -18,6 +18,7 @@
     #include <stdlib.h>
     #include <string.h>
 
+    #include "src/common/tree/tree.h"
     #include "src/common/types/types.h"
     
     extern char *yytext;
@@ -26,6 +27,9 @@
     int yylex (void);
     void yyerror (const char *);
 
+    int lval = 0;
+    char vf_name[128] = {0};
+    char f_name[128] = {0};
     int fn_params_decl = 0;
     int fn_params_call = 0;
 
@@ -35,9 +39,11 @@
     VariablesTable *variables;
     FunctionsTable *functions;
 
-    #define ERR_VARIABLE_ALREADY_DEFINED    "SEMANTIC ERROR (%d): variable '%s' already declared at line '%d'.\n"
+    AST *syntax_tree = NULL;
+
+    #define ERR_VARIABLE_ALREADY_DEFINED    "SEMANTIC ERROR (%d): variable '%s' already declared at line %d.\n"
     #define ERR_UNDEFINED_VARIABLE          "SEMANTIC ERROR (%d): variable '%s' was not declared.\n"
-    #define ERR_FUNCTION_ALREADY_DEFINED    "SEMANTIC ERROR (%d): function '%s' already declared at line '%d'.\n"
+    #define ERR_FUNCTION_ALREADY_DEFINED    "SEMANTIC ERROR (%d): function '%s' already declared at line %d.\n"
     #define ERR_UNDEFINED_FUNCTION          "SEMANTIC ERROR (%d): function '%s' was not declared.\n"
     #define ERR_FN_CALL_WRONG_ARGS_NUMBER   "SEMANTIC ERROR (%d): function '%s' was called with %d arguments but declared with %d parameters.\n"
 
@@ -49,10 +55,11 @@
         exit(-1); \
     } while(0);
  
-    void check_function_call (char const *);
-    void check_undefined_variable (char const *, int);
+    AST *create_number_node (void);
     bool function_exists (char const *, ft_node_t **);
     bool variable_exists (char const *, int, vt_node_t **);
+    ft_node_t *check_function_call (char const *);
+    vt_node_t *check_undefined_variable (char const *, int);
     vt_node_t *check_and_create_variable (char const *, int, int, int, VariableType);
     ft_node_t *check_and_create_function (char const *, int, int);
     lt_node_t *check_and_create_literal (char const *);
@@ -75,56 +82,77 @@
 
 %%
     program: 
-        func-decl-list;
+        func-decl-list                      { syntax_tree = $1; };
 
     func-decl-list: 
-        func-decl-list func-decl | 
-        func-decl;
+        func-decl-list func-decl            { $$ = ($1->append($1, $2), $1); } | 
+        func-decl                           { $$ = AST_INITIALIZE_NODE(AST_NODE_FUNC_LIST, $1); };
 
     func-decl:
-        func-header func-body { ++current_scope; };
+        func-header func-body               { $$ = AST_INITIALIZE_NODE(AST_NODE_FUNC_DECL, $1, $2); ++current_scope; };
 
     func-header:
-        ret-type ID LPAREN params RPAREN { check_and_create_function($2.text, yylineno, fn_params_decl); };
+        ret-type ID { strcpy(f_name, vf_name); } LPAREN params RPAREN   {
+                                                                            AST *fn = AST_INITIALIZE_LEAF(
+                                                                                AST_NODE_FUNC_NAME, check_and_create_function(f_name, yylineno, fn_params_decl)
+                                                                            );
+                                                                            $$ = AST_INITIALIZE_NODE(AST_NODE_FUNC_HEADER, fn, $5);
+                                                                        };
 
     func-body:
-        LBRACE opt-var-decl opt-stmt-list RBRACE;
+        LBRACE opt-var-decl opt-stmt-list RBRACE    { $$ = AST_INITIALIZE_NODE(AST_NODE_FUNC_BODY, $2, $3); };
     
     opt-var-decl: 
-        %empty |
-        var-decl-list;
+        %empty                              { $$ = AST_INITIALIZE_NODE(AST_NODE_VAR_DECL_LIST); } |
+        var-decl-list                       { $$ = $1; };
     
     opt-stmt-list:
-        %empty |
-        stmt-list;
+        %empty                              { $$ = AST_INITIALIZE_NODE(AST_NODE_BLOCK); } |
+        stmt-list                           { $$ = $1; };
     
     ret-type: 
         INT |
         VOID;
     
     params:
-        VOID |
-        param-list;
+        VOID                                        { $$ = AST_INITIALIZE_NODE(AST_NODE_PARAM_LIST); } |
+        param-list                                  { $$ = $1; };
 
     param-list: 
-        param-list COMMA param |
-        param;
+        param-list COMMA param                      { $$ = ($1->append($1, $3), $1); } |
+        param                                       { $$ = AST_INITIALIZE_NODE(AST_NODE_PARAM_LIST, $1); };
     
     param:
-        INT ID { check_and_create_variable($2.text, yylineno, current_scope, 0, VT_INT); ++fn_params_decl; } 
-        | INT ID LBRACK RBRACK { check_and_create_variable($2.text, yylineno, current_scope, 0, VT_ARRAY_POINTER); ++fn_params_decl; };
+        INT ID                                      { 
+                                                        ++fn_params_decl;
+                                                        vt_node_t *var = check_and_create_variable(vf_name, yylineno, current_scope, 0, VT_INT); 
+                                                        $$ = AST_INITIALIZE_LEAF(AST_NODE_VAR_DECL, var);
+                                                    }
+
+        | INT ID LBRACK RBRACK                      { 
+                                                        ++fn_params_decl;
+                                                        vt_node_t *var = check_and_create_variable(vf_name, yylineno, current_scope, 0, VT_ARRAY_POINTER); 
+                                                        $$ = AST_INITIALIZE_LEAF(AST_NODE_VAR_DECL, var);
+                                                    };
     
     var-decl-list: 
-        var-decl-list var-decl |
-        var-decl;
+        var-decl-list var-decl                      { $$ = ($1->append($1, $2), $1); } |
+        var-decl                                    { $$ = AST_INITIALIZE_NODE(AST_NODE_VAR_DECL_LIST, $1); };
     
     var-decl:
-        INT ID SEMI { check_and_create_variable($2.text, yylineno, current_scope, 0, VT_INT); } 
-        | INT ID LBRACK NUM RBRACK SEMI { check_and_create_variable($2.text, yylineno, current_scope, $4.lval, VT_ARRAY); };
+        INT ID SEMI                                 { 
+                                                        vt_node_t *var = check_and_create_variable(vf_name, yylineno, current_scope, 0, VT_INT); 
+                                                        $$ = AST_INITIALIZE_LEAF(AST_NODE_VAR_DECL, var);
+                                                    }
+
+        | INT ID LBRACK NUM RBRACK SEMI             { 
+                                                        vt_node_t *var = check_and_create_variable(vf_name, yylineno, current_scope, lval, VT_ARRAY); 
+                                                        $$ = AST_INITIALIZE_LEAF(AST_NODE_VAR_DECL, var);
+                                                    };
     
     stmt-list:
-        stmt-list stmt |
-        stmt;
+        stmt-list stmt                              { $$ = ($1->append($1, $2), $1); } |
+        stmt                                        { $$ = AST_INITIALIZE_NODE(AST_NODE_BLOCK, $1); };
     
     stmt:
         assign-stmt |
@@ -134,26 +162,32 @@
         func-call SEMI;
     
     assign-stmt:
-        lval ASSIGN arith-expr SEMI;
+        lval ASSIGN arith-expr SEMI                 { $$ = AST_INITIALIZE_NODE(AST_NODE_ASSIGN, $1, $3); };
 
     lval:
-        ID { check_undefined_variable($1.text, current_scope); } 
-        | ID LBRACK NUM RBRACK { check_undefined_variable($1.text, current_scope); }
-        | ID LBRACK ID RBRACK { check_undefined_variable($1.text, current_scope); check_undefined_variable($3.text, current_scope); };
+        check-var-use                               { $$ = $1; }
+        | check-var-use LBRACK NUM RBRACK           { $$ = $1; }
+        | check-var-use LBRACK check-var-use RBRACK { $$ = ($1->append($1, $3), $1); };
+
+    check-var-use:
+        ID  { 
+                vt_node_t *var = check_undefined_variable(vf_name, current_scope); 
+                $$ = AST_INITIALIZE_LEAF(AST_NODE_VAR_USE, var);
+            };
     
     if-stmt:
-        IF LPAREN bool-expr RPAREN block |
-        IF LPAREN bool-expr RPAREN block ELSE block;
+        IF LPAREN bool-expr RPAREN block                { $$ = AST_INITIALIZE_NODE(AST_NODE_IF, $3, $5); } |
+        IF LPAREN bool-expr RPAREN block ELSE block     { $$ = AST_INITIALIZE_NODE(AST_NODE_IF, $3, $5, $7); };    
 
     block:
-        LBRACE opt-stmt-list RBRACE;
+        LBRACE opt-stmt-list RBRACE         { $$ = $2; };
     
     while-stmt:
-        WHILE LPAREN bool-expr RPAREN block;
+        WHILE LPAREN bool-expr RPAREN block { $$ = AST_INITIALIZE_NODE(AST_NODE_WHILE, $3, $5); };
     
     return-stmt:
-        RETURN SEMI |
-        RETURN arith-expr SEMI;
+        RETURN SEMI                         { $$ = AST_INITIALIZE_NODE(AST_NODE_RETURN); } |
+        RETURN arith-expr SEMI              { $$ = AST_INITIALIZE_NODE(AST_NODE_RETURN, $2); };
     
     func-call:
         output-call | 
@@ -161,47 +195,69 @@
         user-func-call;
 
     input-call:
-        INPUT LPAREN RPAREN;
+        INPUT LPAREN RPAREN                 { $$ = AST_INITIALIZE_NODE(AST_NODE_INPUT); };
     
     output-call:
-        OUTPUT LPAREN arith-expr RPAREN;
+        OUTPUT LPAREN arith-expr RPAREN     { $$ = AST_INITIALIZE_NODE(AST_NODE_OUTPUT, $3); };
     
     write-call:
-        WRITE LPAREN STRING RPAREN { check_and_create_literal($3.text); };
+        WRITE LPAREN STRING RPAREN          { 
+                                                AST *lt = AST_INITIALIZE_LEAF(
+                                                    AST_NODE_STRING, check_and_create_literal(vf_name)
+                                                );
+                                                $$ = AST_INITIALIZE_NODE(AST_NODE_WRITE, lt);
+                                            };
     
     user-func-call:
-        ID LPAREN opt-arg-list RPAREN { check_function_call($1.text); fn_params_call = 0; };
+        check-user-fcall LPAREN opt-arg-list RPAREN     {    
+                                                            AST *fn = AST_INITIALIZE_LEAF(
+                                                                AST_NODE_FUNC_CALL, check_function_call(f_name)
+                                                            );
+                                                            $$ = (fn->append(fn, $3), fn);
+                                                        };
     
+    check-user-fcall:
+        ID                                  {
+                                                strcpy(f_name, vf_name);
+                                            };
+
     opt-arg-list:
-        %empty |
-        arg-list;
+        %empty                              { $$ = AST_INITIALIZE_NODE(AST_NODE_ARG_LIST); } |
+        arg-list                            { $$ = $1;  };
     
     arg-list:
-        arg-list COMMA arith-expr { ++fn_params_call; } |
-        arith-expr { ++fn_params_call; };
+        arg-list COMMA arith-expr           { $$ = ($1->append($1, $3), $1); ++fn_params_call;  } |
+        arith-expr                          { $$ = AST_INITIALIZE_NODE(AST_NODE_ARG_LIST, $1); ++fn_params_call; };
     
     bool-expr:
-        arith-expr LT arith-expr |
-        arith-expr LE arith-expr |
-        arith-expr GT arith-expr |
-        arith-expr GE arith-expr |
-        arith-expr EQ arith-expr |
-        arith-expr NEQ arith-expr;
+        arith-expr LT arith-expr            { $$ = AST_INITIALIZE_NODE(AST_NODE_LT, $1, $3); } |
+        arith-expr LE arith-expr            { $$ = AST_INITIALIZE_NODE(AST_NODE_LE, $1, $3); } |
+        arith-expr GT arith-expr            { $$ = AST_INITIALIZE_NODE(AST_NODE_GT, $1, $3); } |
+        arith-expr GE arith-expr            { $$ = AST_INITIALIZE_NODE(AST_NODE_GE, $1, $3); } |
+        arith-expr EQ arith-expr            { $$ = AST_INITIALIZE_NODE(AST_NODE_EQ, $1, $3); } |
+        arith-expr NEQ arith-expr           { $$ = AST_INITIALIZE_NODE(AST_NODE_NEQ, $1, $3); };
     
     arith-expr:
-        arith-expr PLUS arith-expr |
-        arith-expr MINUS arith-expr |
-        arith-expr TIMES arith-expr |
-        arith-expr OVER arith-expr |
-        LPAREN arith-expr RPAREN |
-        lval | 
-        input-call | 
-        user-func-call |
-        NUM;
+        arith-expr PLUS arith-expr          { $$ = AST_INITIALIZE_NODE(AST_NODE_PLUS, $1, $3); } |
+        arith-expr MINUS arith-expr         { $$ = AST_INITIALIZE_NODE(AST_NODE_MINUS, $1, $3); } |
+        arith-expr TIMES arith-expr         { $$ = AST_INITIALIZE_NODE(AST_NODE_TIMES, $1, $3); } |
+        arith-expr OVER arith-expr          { $$ = AST_INITIALIZE_NODE(AST_NODE_OVER, $1, $3); } |
+        LPAREN arith-expr RPAREN            { $$ = $2; } |
+        lval                                { } | 
+        input-call                          { } | 
+        user-func-call                      { } |
+        NUM                                 { $$ = create_number_node(); };
 
 %%
 
-void check_function_call (char const *identifier) {
+AST *create_number_node (void) {
+    int *number = calloc(1, sizeof *number);
+    *number = lval;
+
+    return AST_INITIALIZE_LEAF(AST_NODE_NUM, number);
+}
+
+ft_node_t *check_function_call (char const *identifier) {
     ft_node_t *fn;
 
     if(function_exists(identifier, &fn) == false) {
@@ -211,12 +267,20 @@ void check_function_call (char const *identifier) {
     if(fn_params_call != fn->arity) {
         print_error(ERR_FN_CALL_WRONG_ARGS_NUMBER, yylineno, fn->identifier, fn_params_call, fn->arity);
     }
+
+    fn_params_call = 0;
+
+    return fn;
 }
 
-void check_undefined_variable (char const *identifier, int scope) {
-    if(variable_exists(identifier, scope, NULL) == false) {
+vt_node_t *check_undefined_variable (char const *identifier, int scope) {
+    vt_node_t *var;
+
+    if(variable_exists(identifier, scope, &var) == false) {
         print_error(ERR_UNDEFINED_VARIABLE, yylineno, identifier);
     }
+
+    return var;
 }
 
 bool variable_exists (char const *identifier, int scope, vt_node_t **out_var) {
@@ -228,11 +292,11 @@ bool variable_exists (char const *identifier, int scope, vt_node_t **out_var) {
             *out_var = (vt_node_t *)var;
         }
 
-        free(new_var);
+        free_variable(new_var);
         return true;
     }
 
-    free(new_var);
+    free_variable(new_var);
     return false;
 }
 
@@ -302,16 +366,27 @@ int main (int argc, char **argv) {
     if(yyparse() == 0) {
         printf("PARSE SUCCESSFUL!\n");
 
-        printf("\nLiterals Table:\n");
+        printf("\nLiterals table:\n");
         literals->print(literals->self, print_literal);
 
-        printf("\n\nVariables Table:\n");
+        printf("\n\nVariables table:\n");
         variables->print(variables->self, print_variable);
 
-        printf("\n\nFunctions Table:\n");
+        printf("\n\nFunctions table:\n");
         functions->print(functions->self, print_function);
     }
 
+    //printAST(syntax_tree);
+
+    // Pode ter ocorrido um erro de parsing/scanning e a raiz da AST não pôde ser construída.
+    // Neste ponto eu vejo duas alternativas:
+    // 1) Armazenar todos os nós de AST alocados antes do erro e liberá-los nesta situação específica
+    // 2) Criar uma mini pool de memória dinâmica e usar funções próprias em vez de malloc/calloc.
+    // Como o objeto do trabalho é aprender a construir um compilador, não vejo a necessidade de adotar nenhuma das duas opções.
+    if(syntax_tree != NULL) {
+        deleteAST(syntax_tree);
+    }
+    
     deleteHashMap(literals, free_literal);
     deleteHashMap(variables, free_variable);
     deleteHashMap(functions, free_function);
