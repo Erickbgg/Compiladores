@@ -77,6 +77,11 @@ typedef struct ast_interface {
      * Checa se um nó é do tipo folha
      */
     bool (*isLeaf)(struct ast_interface*);
+
+    /**
+     * Retorna referência para a lista de filhos do nó AST
+     */
+    struct ast_interface *(*getChildren)(struct ast_interface *);
 } AST;
 
 #include "../types/types.h"

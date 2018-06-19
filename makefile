@@ -4,7 +4,7 @@ UNAME_S := $(shell uname -s)
 
 EXEC	:= trab4
 BASEDIR	:= src
-MODULES	:= common/types common/hash common/tree
+MODULES	:= common/types common/hash common/tree interpreter
 SCANNER	:= $(addprefix $(BASEDIR)/,scanner/scanner.l)
 PARSER	:= $(addprefix $(BASEDIR)/,parser/parser.y)
 OBJS	:= $(addprefix $(BASEDIR)/,$(MODULES))

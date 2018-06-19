@@ -141,6 +141,10 @@ void *getASTNodeData (struct ast_interface *node) {
     return node->self->data;
 }
 
+static struct ast_interface *_ast_get_children (AST *node) {
+    return node->self->children;
+}
+
 void printAST (AST *root) {
     _ast_print_dot(root);
 }
@@ -154,6 +158,7 @@ AST *initializeAST (ASTNodeType type, void *data, unsigned int count, ...) {
     ast->append = _ast_append;
     ast->isLeaf = _ast_is_leaf;
     ast->free = _ast_free;
+    ast->getChildren = _ast_get_children;
 
     if(count > 0) {
         va_list va_args;

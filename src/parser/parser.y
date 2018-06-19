@@ -20,6 +20,7 @@
 
     #include "src/common/tree/tree.h"
     #include "src/common/types/types.h"
+    #include "src/interpreter/interpreter.h"
     
     extern char *yytext;
     extern int yylineno;
@@ -375,6 +376,8 @@ int main (int argc, char **argv) {
         printf("\n\nFunctions table:\n");
         functions->print(functions->self, print_function);
     }
+
+    run_ast(syntax_tree);
 
     //printAST(syntax_tree);
 

@@ -15,6 +15,7 @@ struct ft_node_t {
     const char *identifier;
     unsigned int line;
     unsigned int arity;
+    AST *ast_fn_node;
 };
 
 typedef struct ft_node_t ft_node_t;
@@ -37,5 +38,7 @@ void print_function (void const *);
  * @param fn        Libera a memória alocada para um nó de função.
  */
 void free_function (void const *);
+
+void function_set_ast_node (ft_node_t *, AST *);
 
 #endif

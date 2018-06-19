@@ -31,7 +31,7 @@ struct ft_node_t *create_function (const char *identifier, unsigned int line, un
 void print_function (void const *fn) {
     ft_node_t *f = (ft_node_t *)fn;
 
-    printf("name: %s, line: %d, arity: %d\n", f->identifier, f->line, f->arity);
+    printf("name: %s, line: %d, arity: %d, ast_entry: %p\n", f->identifier, f->line, f->arity, f->ast_fn_node);
 }
 
 /**
@@ -44,4 +44,8 @@ void free_function (void const *function) {
 
     free((void *) fn->identifier);
     free(fn);
+}
+
+void function_set_ast_node (ft_node_t *fn, AST *node) {
+    fn->ast_fn_node = node;
 }
