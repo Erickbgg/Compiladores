@@ -26,6 +26,7 @@ struct vt_node_t {
     unsigned int line;
     unsigned int scope;
     unsigned int size;
+    unsigned int frame_offset;
     VariableType type;
 };
 
@@ -58,5 +59,7 @@ void print_variable (void const *);
  * @param var       Libera a memória alocada para um nó de variável.
  */
 void free_variable (void const *);
+
+void variable_set_frame_offset (vt_node_t *, unsigned int);
 
 #endif

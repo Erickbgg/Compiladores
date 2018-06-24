@@ -15,6 +15,7 @@ struct ft_node_t {
     const char *identifier;
     unsigned int line;
     unsigned int arity;
+    int frame_store_size;
     AST *ast_fn_node;
 };
 
@@ -40,5 +41,7 @@ void print_function (void const *);
 void free_function (void const *);
 
 void function_set_ast_node (ft_node_t *, AST *);
+
+void function_set_frame_store_size (ft_node_t *, int);
 
 #endif

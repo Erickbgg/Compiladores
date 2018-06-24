@@ -28,13 +28,19 @@
     int yylex (void);
     void yyerror (const char *);
 
+    // Temporário que armazena valores numéricos lidos pelo scanner.
     int lval = 0;
+    // Temporários que amazenam identificadores lidos pelo scanner.
     char vf_name[128] = {0};
     char f_name[128] = {0};
+    // Temporário que conta aridade das funções.
     int fn_params_decl = 0;
+    // Temporário que conta número de argumentos usados na chamada de funções de usuário.
     int fn_params_call = 0;
-
+    // Temporário que armazena o id do escopo atual.
     int current_scope = 0;
+    //Temporário que armazena a quantidade de variáveis que precisarão ser declaradas no frame da função atual.
+    int current_frame_store_size = 0;
 
     LiteralsTable *literals;
     VariablesTable *variables;
@@ -90,7 +96,13 @@
         func-decl                           { $$ = AST_INITIALIZE_NODE(AST_NODE_FUNC_LIST, $1); };
 
     func-decl:
-        func-header func-body               { $$ = AST_INITIALIZE_NODE(AST_NODE_FUNC_DECL, $1, $2); ++current_scope; };
+        func-header func-body               { 
+                                                $$ = AST_INITIALIZE_NODE(AST_NODE_FUNC_DECL, $1, $2);
+                                                ft_node_t *fn = AST_GET_NODE_DATA($1->getChildren($1));
+                                                function_set_frame_store_size(fn, current_frame_store_size);
+                                                ++current_scope; 
+                                                current_frame_store_size = 0; 
+                                            };
 
     func-header:
         ret-type ID { strcpy(f_name, vf_name); } LPAREN params RPAREN   {
@@ -126,7 +138,7 @@
     param:
         INT ID                                      { 
                                                         ++fn_params_decl;
-                                                        vt_node_t *var = check_and_create_variable(vf_name, yylineno, current_scope, 0, VT_INT); 
+                                                        vt_node_t *var = check_and_create_variable(vf_name, yylineno, current_scope, 0, VT_INT);
                                                         $$ = AST_INITIALIZE_LEAF(AST_NODE_VAR_DECL, var);
                                                     }
 
@@ -338,6 +350,15 @@ vt_node_t *check_and_create_variable (char const *identifier, int line, int scop
     }
 
     var = create_variable(identifier, line, scope, size, type);
+
+    variable_set_frame_offset(var, current_frame_store_size);
+    
+    if(type == VT_ARRAY) {
+        current_frame_store_size += size;
+    } else {
+        ++current_frame_store_size;
+    }
+
     variables->insert(variables->self, identifier, var);
 
     return var;
@@ -377,7 +398,7 @@ int main (int argc, char **argv) {
         functions->print(functions->self, print_function);
     }
 
-    run_ast(syntax_tree);
+    //run_ast(syntax_tree);
 
     //printAST(syntax_tree);
 

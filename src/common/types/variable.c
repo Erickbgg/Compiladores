@@ -58,7 +58,7 @@ int compare_variables (const void *left, const void *right) {
 void print_variable (void const *var) {
     vt_node_t *v = (vt_node_t *)var;
 
-    printf("name: %s, line: %d, scope: %d, size: %d\n", v->identifier, v->line, v->scope, v->size);
+    printf("name: %s, line: %d, scope: %d, size: %d, store_offset: %d\n", v->identifier, v->line, v->scope, v->size, v->frame_offset);
 }
 
 /**
@@ -71,4 +71,8 @@ void free_variable (void const *variable) {
 
     free((void *) var->identifier);
     free(var);
+}
+
+void variable_set_frame_offset (vt_node_t *var, unsigned int offset) {
+    var->frame_offset = offset;
 }
