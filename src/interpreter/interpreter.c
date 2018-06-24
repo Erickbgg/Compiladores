@@ -32,6 +32,8 @@ struct frame_t {
 
     // Pilha que armazena os resultados das expressões da função.
     int stack[_CC_MAX_FRAME_STACK_SIZE_];
+    // Stack pointer do frame.
+    int frame_sp;
 
     // Tamanho da store.
     int store_size;
@@ -46,6 +48,28 @@ struct frame_stack_t {
 
 static struct frame_t *current_frame;
 static struct frame_stack_t *frame_stack;
+
+static void _frame_stack_push (struct frame_t *frame, int data) {
+    if(frame->frame_sp == _CC_MAX_FRAME_STACK_SIZE_ - 1) {
+        printf("PILHA CHEIA %s:%d\n", __FILE__, __LINE__);
+        exit(-1);
+    }
+
+    ++frame->frame_sp;
+    frame->stack[frame->frame_sp] = data;
+}
+
+static int _frame_stack_pop (struct frame_t *frame) {
+    if(frame->frame_sp < 0) {
+        printf("PILHA VAZIA %s:%d\n", __FILE__, __LINE__);
+        exit(-1);
+    }
+
+    int data = frame->stack[frame->frame_sp];
+    --frame->frame_sp;
+
+    return data;
+}
 
 static AST *map_ast_nodes_to_functions_table (AST *root) {
     AST *main_fn = NULL;
