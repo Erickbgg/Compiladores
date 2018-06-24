@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../common/tree/tree.h"
+#include "interpreter.h"
 
 extern LiteralsTable literals;
 extern VariablesTable variables;
@@ -132,8 +132,71 @@ static void _frame_add_var (struct frame_t *frame, vt_node_t *var) {
     }
 }
 
+static void _run_plus (AST *plus) {
+    printf("_run_plus\n");
+    int r = _frame_stack_pop(current_frame);
+    int l = _frame_stack_pop(current_frame);
+
+    _frame_stack_push(current_frame, l + r);
+}
+
+static void _run_num (AST *num) {
+    printf("_run_num\n");
+    int *data = AST_GET_NODE_DATA(num);
+
+    _frame_stack_push(current_frame, *data);
+}
+
+static void _run_output (AST *output) {
+    printf("_run_output\n");
+    int data = _frame_stack_pop(current_frame);
+
+    printf("%d", data);
+}
+
+static _operation_fn_t _get_node_operation_fn (AST *node) {
+    switch(AST_GET_NODE_TYPE(node)) {
+        case AST_NODE_WRITE:
+            return NULL;
+        case AST_NODE_STRING:
+            return NULL;
+        case AST_NODE_VAR_USE:
+            return NULL;
+        case AST_NODE_ASSIGN:
+            return NULL;
+        case AST_NODE_OUTPUT: return _run_output;
+        case AST_NODE_PLUS: return _run_plus;
+        case AST_NODE_NUM: return _run_num;
+        default:
+            return NULL;
+    }
+}
+
+static void _rec_run_node (AST *node) {
+    AST *child = NULL;
+    //Caminhamento pós ordem pelos filhos do bloco.
+    for(child = node->getChildren(node); child != NULL; child = child->next_sibiling) {
+        _rec_run_node(child);
+    }
+
+    // Obtém a função que deve executar o nó atual.
+    _operation_fn_t op_fn = _get_node_operation_fn(node);
+
+    // Executa o nó atual.
+    if(op_fn != NULL) {
+        op_fn(node);
+    }
+}
+
 static void _run_func_body (AST *fn_body) {
-    
+    AST *block = (fn_body->getChildren(fn_body))->next_sibiling;
+
+    _rec_run_node(block);
+    _operation_fn_t op_fn = _get_node_operation_fn(block);
+
+    if(op_fn != NULL) {
+        op_fn(block);
+    }
 }
 
 static struct frame_t *_initialize_frame (AST *fn_node) {
@@ -141,6 +204,7 @@ static struct frame_t *_initialize_frame (AST *fn_node) {
     ft_node_t *fn = AST_GET_NODE_DATA(header->getChildren(header));
     struct frame_t *frame = calloc(1, sizeof *frame);
 
+    frame->frame_sp = -1;
     frame->store_size = fn->frame_store_size;
     frame->owned_indexes = calloc(frame->store_size, sizeof *frame->owned_indexes);
     frame->store = calloc(frame->store_size, sizeof *frame->store);
@@ -184,8 +248,9 @@ static void _delete_frame (struct frame_t *frame) {
 
 static void _run_func_decl (AST *fn_node) {
     AST *fn_header = fn_node->getChildren(fn_node);
-    //FIXME: como definir o current_frame e o previous_frame?
     struct frame_t *frame = _initialize_frame(fn_node);
+    //FIXME: como definir o current_frame e o previous_frame?
+    current_frame = frame;
 
     _push_frame(frame_stack, frame);
     _run_func_body(fn_header->next_sibiling);
