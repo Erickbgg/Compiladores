@@ -353,11 +353,7 @@ vt_node_t *check_and_create_variable (char const *identifier, int line, int scop
 
     variable_set_frame_offset(var, current_frame_store_size);
     
-    if(type == VT_ARRAY) {
-        current_frame_store_size += size;
-    } else {
-        ++current_frame_store_size;
-    }
+    ++current_frame_store_size;
 
     variables->insert(variables->self, identifier, var);
 
