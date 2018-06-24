@@ -4,3 +4,5 @@ parser.h
 .vscode
 /.DS_Store
 tests/.DS_Store
+.DS_Store/
+tests/trab4/.DS_Store
