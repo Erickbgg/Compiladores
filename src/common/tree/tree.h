@@ -91,10 +91,12 @@ typedef struct ast_interface {
 #define AST_INITIALIZE_LEAF(type, data, ...)    initializeAST(type, data, 0)
 #define AST_INITIALIZE_NODE(type, ...)          initializeAST(type, NULL, __COUNT_ARGS(__VA_ARGS__), ##__VA_ARGS__)
 #define AST_GET_NODE_DATA(node)                 getASTNodeData(node)
+#define AST_GET_NODE_TYPE(node)                 getASTNodeType(node)
 
 AST *initializeAST (ASTNodeType, void *, unsigned int, ...);
 void deleteAST (struct ast_interface *);
 void printAST (struct ast_interface *);
 void *getASTNodeData (struct ast_interface *);
+ASTNodeType getASTNodeType (struct ast_interface *);
 
 #endif

@@ -141,6 +141,10 @@ void *getASTNodeData (struct ast_interface *node) {
     return node->self->data;
 }
 
+ASTNodeType getASTNodeType (struct ast_interface *node) {
+    return node->self->type;
+}
+
 static struct ast_interface *_ast_get_children (AST *node) {
     return node->self->children;
 }
