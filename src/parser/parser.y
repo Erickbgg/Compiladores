@@ -382,19 +382,19 @@ int main (int argc, char **argv) {
     variables = initializeHashMap(256 + 27);
     
     if(yyparse() == 0) {
-        printf("PARSE SUCCESSFUL!\n");
+        // printf("PARSE SUCCESSFUL!\n");
 
-        printf("\nLiterals table:\n");
-        literals->print(literals->self, print_literal);
+        // printf("\nLiterals table:\n");
+        // literals->print(literals->self, print_literal);
 
-        printf("\n\nVariables table:\n");
-        variables->print(variables->self, print_variable);
+        // printf("\n\nVariables table:\n");
+        // variables->print(variables->self, print_variable);
 
-        printf("\n\nFunctions table:\n");
-        functions->print(functions->self, print_function);
+        // printf("\n\nFunctions table:\n");
+        // functions->print(functions->self, print_function);
     }
 
-    //run_ast(syntax_tree);
+    run_ast(syntax_tree);
 
     //printAST(syntax_tree);
 

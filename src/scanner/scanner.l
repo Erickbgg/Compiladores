@@ -60,7 +60,7 @@ return                          { return RETURN; }
 
 [0-9]+|0                        { lval = atoi(yytext); return NUM; }
 [a-zA-Z][a-zA-Z0-9]*            { strcpy(vf_name, yytext); return ID; }
-\"([^\"]*)\"                    { strcpy(vf_name, yytext); return STRING; }
+\"(?:[^"]*)\"                    { strcpy(vf_name, yytext); return STRING; }
 
 .                               { printf("SCANNING ERROR (%d): Unknown symbol %s\n", yylineno, yytext); exit(-1); }
 

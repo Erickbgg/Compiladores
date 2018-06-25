@@ -8,6 +8,8 @@ extern LiteralsTable literals;
 extern VariablesTable variables;
 extern FunctionsTable functions;
 
+static void _recursively_run_node (AST *);
+
 #ifndef _CC_MAX_FRAME_STACK_SIZE
     #define _CC_MAX_FRAME_STACK_SIZE_ 128
 #endif
@@ -133,50 +135,174 @@ static void _frame_add_var (struct frame_t *frame, vt_node_t *var) {
 }
 
 static void _run_plus (AST *plus) {
-    printf("_run_plus\n");
+    #ifdef DEBUG
+        printf("_run_plus\n");
+    #endif
+
     int r = _frame_stack_pop(current_frame);
     int l = _frame_stack_pop(current_frame);
 
     _frame_stack_push(current_frame, l + r);
 }
 
+static void _run_over (AST *over) {
+    #ifdef DEBUG
+        printf("_run_over\n");
+    #endif
+
+    int r = _frame_stack_pop(current_frame);
+    int l = _frame_stack_pop(current_frame);
+
+    _frame_stack_push(current_frame, l / r);
+}
+
+static void _run_times (AST *over) {
+    #ifdef DEBUG
+        printf("_run_times\n");
+    #endif
+
+    int r = _frame_stack_pop(current_frame);
+    int l = _frame_stack_pop(current_frame);
+
+    _frame_stack_push(current_frame, l * r);
+}
+
+static void _run_minus (AST *sub) {
+    #ifdef DEBUG
+        printf("_run_minus\n");
+    #endif
+
+    int r = _frame_stack_pop(current_frame);
+    int l = _frame_stack_pop(current_frame);
+
+    _frame_stack_push(current_frame, l - r);
+}
+
 static void _run_num (AST *num) {
-    printf("_run_num\n");
+    #ifdef DEBUG
+        printf("_run_num\n");
+    #endif
+
     int *data = AST_GET_NODE_DATA(num);
 
     _frame_stack_push(current_frame, *data);
 }
 
 static void _run_output (AST *output) {
-    printf("_run_output\n");
+    #ifdef DEBUG
+        printf("_run_output\n");
+    #endif
+
     int data = _frame_stack_pop(current_frame);
 
     printf("%d", data);
 }
 
+static void _run_assign (AST *assign) {
+    #ifdef DEBUG
+        printf("_run_assign\n");
+    #endif
+
+    AST *var_node = assign->getChildren(assign);
+    AST *rval = var_node->next_sibiling;
+
+    // Operações de atribuição:
+    // x = 10;      - ok
+    // x = y + 5;   - ok
+    // x[i] = 10;
+    // x[i] = y[i];
+    _recursively_run_node(rval);
+
+    vt_node_t *var = AST_GET_NODE_DATA(var_node);
+
+    switch(var->type) {
+        case VT_INT:
+            *(current_frame->store[var->frame_offset]) = _frame_stack_pop(current_frame);
+        case VT_ARRAY:
+            //vt_node_t *array_index = var_node->getChildren(var_node);
+            //current_frame->store[var->frame_offset][*(current_frame->store[array_index->frame_offset])] = _frame_stack_pop(current_frame);
+            //TODO: implementar
+            break;
+
+        case VT_ARRAY_POINTER:
+            // teoricamente é o mesmo que o código para `VT_ARRAY`
+            //TODO: implementar
+            break;
+    }
+}
+
+static char const *_print_special_char (char const *ch) {
+    char p = *ch;
+
+    switch(p) {
+        case 'n': printf("\n");
+            break;
+        case 't': printf("\t");
+            break;
+    }
+
+    return ch;
+}
+
+static void _run_write (AST *write) {
+    #ifdef DEBUG
+        printf("_run_write\n");
+    #endif
+
+    lt_node_t *string = AST_GET_NODE_DATA(write->getChildren(write));
+
+    for(char const *p = string->value; *p; ++p) {
+        if(*p == '"') {
+            continue;
+        }
+
+        if(*p == '\\') {
+            p = _print_special_char(p + 1);
+        } else {
+            printf("%c", *p);
+        }
+    }
+}
+
+static void _run_var_use (AST *var_node) {
+    #ifdef DEBUG
+        printf("_run_var_use\n");
+    #endif
+    vt_node_t *var = AST_GET_NODE_DATA(var_node);
+    
+    _recursively_run_node(var_node->getChildren(var_node));
+
+    switch(var->type) {
+        case VT_INT:
+            _frame_stack_push(current_frame, *(current_frame->store[var->frame_offset]));
+            break;
+    }
+}
+
 static _operation_fn_t _get_node_operation_fn (AST *node) {
     switch(AST_GET_NODE_TYPE(node)) {
-        case AST_NODE_WRITE:
-            return NULL;
-        case AST_NODE_STRING:
-            return NULL;
-        case AST_NODE_VAR_USE:
-            return NULL;
-        case AST_NODE_ASSIGN:
-            return NULL;
+        case AST_NODE_WRITE: return _run_write;
+        case AST_NODE_ASSIGN: return _run_assign;
         case AST_NODE_OUTPUT: return _run_output;
         case AST_NODE_PLUS: return _run_plus;
+        case AST_NODE_OVER: return _run_over;
+        case AST_NODE_TIMES: return _run_times;
+        case AST_NODE_MINUS: return _run_minus;
         case AST_NODE_NUM: return _run_num;
+        case AST_NODE_VAR_USE: return _run_var_use;
         default:
+            // AST_NODE_STRING
             return NULL;
     }
 }
 
-static void _rec_run_node (AST *node) {
+static void _recursively_run_node (AST *node) {
+    if(node == NULL) return;
+
     AST *child = NULL;
     //Caminhamento pós ordem pelos filhos do bloco.
     for(child = node->getChildren(node); child != NULL; child = child->next_sibiling) {
-        _rec_run_node(child);
+        _recursively_run_node(child);
     }
 
     // Obtém a função que deve executar o nó atual.
@@ -191,7 +317,7 @@ static void _rec_run_node (AST *node) {
 static void _run_func_body (AST *fn_body) {
     AST *block = (fn_body->getChildren(fn_body))->next_sibiling;
 
-    _rec_run_node(block);
+    _recursively_run_node(block);
     _operation_fn_t op_fn = _get_node_operation_fn(block);
 
     if(op_fn != NULL) {
@@ -273,10 +399,9 @@ void run_ast (AST *root) {
     AST *main_fn = map_ast_nodes_to_functions_table(root);
 
     if(main_fn == NULL) {
-        printf("\nReferência indefinida para a função main.\n");
+        printf("ERROR: undefined reference to function `main`.\n");
         exit(-1);
     }
 
-    printf("\nFunção main encontrada no endereço %p\n", main_fn);
     _run_ast_sub(main_fn);
 }
