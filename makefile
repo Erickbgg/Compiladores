@@ -2,7 +2,7 @@ CC 		:= gcc
 LIBS	:= 
 UNAME_S := $(shell uname -s)
 
-EXEC	:= trab4
+EXEC	:= trab5
 BASEDIR	:= src
 MODULES	:= common/types common/hash common/tree interpreter
 SCANNER	:= $(addprefix $(BASEDIR)/,scanner/scanner.l)
