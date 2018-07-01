@@ -179,8 +179,11 @@
 
     lval:
         check-var-use                               { $$ = $1; }
-        | check-var-use LBRACK NUM RBRACK           { $$ = $1; }
+        | check-var-use LBRACK check-num RBRACK     { $$ = ($1->append($1, $3), $1); }
         | check-var-use LBRACK check-var-use RBRACK { $$ = ($1->append($1, $3), $1); };
+
+    check-num:
+        NUM     { $$ = create_number_node(); }
 
     check-var-use:
         ID  { 
@@ -236,7 +239,7 @@
 
     opt-arg-list:
         %empty                              { $$ = AST_INITIALIZE_NODE(AST_NODE_ARG_LIST); } |
-        arg-list                            { $$ = $1;  };
+        arg-list                            { $$ = $1; };
     
     arg-list:
         arg-list COMMA arith-expr           { $$ = ($1->append($1, $3), $1); ++fn_params_call;  } |
@@ -396,7 +399,7 @@ int main (int argc, char **argv) {
 
     run_ast(syntax_tree);
 
-    //printAST(syntax_tree);
+    printAST(syntax_tree);
 
     // Pode ter ocorrido um erro de parsing/scanning e a raiz da AST não pôde ser construída.
     // Neste ponto eu vejo duas alternativas:
