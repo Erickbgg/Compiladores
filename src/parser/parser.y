@@ -395,11 +395,8 @@ int main (int argc, char **argv) {
 
         // printf("\n\nFunctions table:\n");
         // functions->print(functions->self, print_function);
+        run_ast(syntax_tree);
     }
-
-    run_ast(syntax_tree);
-
-    printAST(syntax_tree);
 
     // Pode ter ocorrido um erro de parsing/scanning e a raiz da AST não pôde ser construída.
     // Neste ponto eu vejo duas alternativas:
@@ -407,6 +404,7 @@ int main (int argc, char **argv) {
     // 2) Criar uma mini pool de memória dinâmica e usar funções próprias em vez de malloc/calloc.
     // Como o objeto do trabalho é aprender a construir um compilador, não vejo a necessidade de adotar nenhuma das duas opções.
     if(syntax_tree != NULL) {
+        // printAST(syntax_tree);
         deleteAST(syntax_tree);
     }
     
