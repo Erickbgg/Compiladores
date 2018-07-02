@@ -1,6 +1,11 @@
 #ifndef _CC_FUNCTION_H_
 #define _CC_FUNCTION_H_
 
+typedef enum {
+    RT_VOID,
+    RT_INT
+} ReturnType;
+
 #include "types.h"
 
 /**
@@ -17,6 +22,7 @@ struct ft_node_t {
     unsigned int arity;
     int frame_store_size;
     AST *ast_fn_node;
+    ReturnType return_type;
 };
 
 typedef struct ft_node_t ft_node_t;
