@@ -42,6 +42,8 @@
     //Temporário que armazena a quantidade de variáveis que precisarão ser declaradas no frame da função atual.
     int current_frame_store_size = 0;
 
+    ReturnType ret_type;
+
     LiteralsTable *literals;
     VariablesTable *variables;
     FunctionsTable *functions;
@@ -124,8 +126,8 @@
         stmt-list                           { $$ = $1; };
     
     ret-type: 
-        INT |
-        VOID;
+        INT     { ret_type = RT_INT; } |
+        VOID    { ret_type = RT_VOID; };
     
     params:
         VOID                                        { $$ = AST_INITIALIZE_NODE(AST_NODE_PARAM_LIST); } |
@@ -338,6 +340,7 @@ ft_node_t *check_and_create_function (char const *identifier, int line, int arit
     }
 
     fn = create_function(identifier, line, arity);
+    fn->return_type = ret_type;
 
     functions->insert(functions->self, identifier, fn);
     fn_params_decl = 0;
