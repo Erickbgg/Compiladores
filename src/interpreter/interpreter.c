@@ -144,6 +144,9 @@ void _push_frame (struct frame_stack_t *fstack, struct frame_t *frame) {
     ++fstack->size;
 }
 
+/**
+ * Adiciona (aloca espaço) variáveis no frame da função que vai rodar
+ */
 static void _frame_add_var (struct frame_t *frame, vt_node_t *var) {
     switch(var->type) {
         case VT_INT:
@@ -165,11 +168,16 @@ static void _frame_add_var (struct frame_t *frame, vt_node_t *var) {
     }
 }
 
+/**
+ * Inicializa um frame com espaço reservado para todas as variáveis
+ * declaradas na função (parâmetros e body)
+ */
 static struct frame_t *_initialize_frame (AST *fn_node) {
     AST *header = fn_node->getChildren(fn_node);
     ft_node_t *fn = AST_GET_NODE_DATA(header->getChildren(header));
     struct frame_t *frame = calloc(1, sizeof *frame);
 
+    // Inicialização do frame
     frame->frame_sp = -1;
     frame->store_size = fn->frame_store_size;
     frame->owned_indexes = calloc(frame->store_size, sizeof *frame->owned_indexes);
@@ -179,7 +187,7 @@ static struct frame_t *_initialize_frame (AST *fn_node) {
     AST *tmp;
     AST *param_list = header->getChildren(header)->next_sibiling;
     
-    // Percorrer param_list.
+    // Inicializa espaço para os parâmetros
     for(i = 0, tmp = param_list->getChildren(param_list); tmp != NULL; ++i, tmp = tmp->next_sibiling) {
         vt_node_t *var = AST_GET_NODE_DATA(tmp);
         
@@ -189,6 +197,7 @@ static struct frame_t *_initialize_frame (AST *fn_node) {
     AST *body = header->next_sibiling;
     AST *var_list = body->getChildren(body); 
 
+    // Inicializa espaço para as variáveis do body
     for(tmp = var_list->getChildren(var_list); tmp != NULL; ++i, tmp = tmp->next_sibiling) {
         vt_node_t *var = AST_GET_NODE_DATA(tmp);
         
@@ -198,10 +207,15 @@ static struct frame_t *_initialize_frame (AST *fn_node) {
     return frame;
 }
 
+/**
+ * Libera a memória alocada para um frame
+ */
 static void _delete_frame (struct frame_t *frame) {
     int i;
 
     for(i = 0; i < frame->store_size; ++ i) {
+        // Variáveis que foram passadas por referência serão
+        // desalocadas em seus respectivos frames de origem
         if(frame->owned_indexes[i] == true) {
             free(frame->store[i]);
         }
@@ -212,6 +226,9 @@ static void _delete_frame (struct frame_t *frame) {
     free(frame);
 }
 
+/**
+ * Retorna um ponteiro para a função que vai executar o nó da AST
+ */
 static _operation_fn_t _get_node_operation_fn (AST *node) {
     switch(AST_GET_NODE_TYPE(node)) {
         case AST_NODE_WRITE: return _run_write;
@@ -248,6 +265,9 @@ static void print_stack (struct frame_t *frame) {
     printf("\n");
 }
 
+/**
+ * Executa recursivamente um nó da AST
+ */
 static void _recursively_run_node (AST *node) {
     if(node == NULL) return;
     
@@ -259,14 +279,14 @@ static void _recursively_run_node (AST *node) {
     ASTNodeType type = AST_GET_NODE_TYPE(node);
 
     if(type == AST_NODE_VAR_USE || type == AST_NODE_ASSIGN || type == AST_NODE_FUNC_CALL || type == AST_NODE_RETURN || type == AST_NODE_OUTPUT) {
-        // Operações especiais, não executa os filhos desses nós.
+        // Operações especiais. Não executa os filhos desses nós.
         // Os filhos desses nós serão executados e tratados em suas respectivas funções.
     } else if(type == AST_NODE_IF || type == AST_NODE_WHILE) {
-        //recursivamente executa o nó da expressão
+        // Recursivamente executa o nó da expressão.
         child = node->getChildren(node);
         _recursively_run_node(child);
     } else {
-        //Caminhamento pós ordem pelos filhos do bloco.
+        // Caminhamento pós-ordem pelos filhos do bloco.
         for(child = node->getChildren(node); child != NULL; child = child->next_sibiling) {
             _recursively_run_node(child);
         }
@@ -275,8 +295,11 @@ static void _recursively_run_node (AST *node) {
     // Obtém a função que deve executar o nó atual.
     _operation_fn_t op_fn = _get_node_operation_fn(node);
 
-    // Executa o nó atual.
+    // Alguns tipos de nó não precisam ser executados diretamente.
+    // Suas ações estão contidas dentro dos nós subsequentes a eles
+    // ou o nó não executa nenhuma ação.
     if(op_fn != NULL) {
+        // Executa o nó atual.
         op_fn(node);
     }
 
@@ -424,12 +447,14 @@ static void _run_output (AST *output) {
     if(AST_GET_NODE_TYPE(val) == AST_NODE_VAR_USE) {
         vt_node_t *val_v = AST_GET_NODE_DATA(val);
 
+        // Verifica se o valor sendo exibido é um array
         if(variable_is_array(val_v) && val->getChildren(val) == NULL) {
             printf("EXECUTION ERROR: can't print arrays directly\n");
             exit(1);
         }
     }
 
+    // Avalia o valor que deve ser exibido.
     _recursively_run_node(val);
 
     int data = _frame_stack_pop(current_frame);
@@ -446,6 +471,8 @@ static void _run_if (AST *_if) {
     int r = _frame_stack_pop(current_frame);
 
     if(r == 0) {
+        // Caso do `else`
+
         #ifdef DEBUG
             printf("false\n");
         #endif
@@ -453,6 +480,7 @@ static void _run_if (AST *_if) {
         AST *_else = expr->next_sibiling->next_sibiling;
         _recursively_run_node(_else);
     } else {
+        // Caso do `then`
         #ifdef DEBUG
             printf("true\n");
         #endif
@@ -486,12 +514,12 @@ static void _run_return (AST *_return) {
 
     AST *rval = _return->getChildren(_return);
 
-    // Verificação de retorno de arrays diretamente
     AST *rhs = rval;
 
     if(AST_GET_NODE_TYPE(rhs) == AST_NODE_VAR_USE) {
         vt_node_t *rhs_v = AST_GET_NODE_DATA(rhs);
 
+        // Verificação de retorno de arrays diretamente
         if(variable_is_array(rhs_v) && rhs->getChildren(rhs) == NULL) {
             printf("EXECUTION ERROR: can't return arrays directly\n");
             exit(1);
@@ -536,23 +564,29 @@ static void _run_assign (AST *assign) {
     #ifdef DEBUG
         printf("_run_assign_rval\n");
     #endif
-    // Recursivamente calcula o rval
+    // Recursivamente calcula o rhs
     _recursively_run_node(rval);
 
     #ifdef DEBUG
         printf("_run_assign_lval_idx\n");
     #endif
-    // Recursivamente executa o cálculo do índice, caso seja um array
+    // Recursivamente executa o cálculo do índice, caso seja um array.
+    // Números e variáveis comuns não possuem filhos, logo
+    // a execução recursiva retorna imediatamente.
     _recursively_run_node(lval->getChildren(lval));
 
+    // Recupera variável armazenada no lhs.
     vt_node_t *var = AST_GET_NODE_DATA(lval);
 
     switch(var->type) {
         case VT_INT:
+            // A atribuição está indo para uma variável comum.
             *(current_frame->store[var->frame_offset]) = _frame_stack_pop(current_frame);
             break;
         case VT_ARRAY:
         case VT_ARRAY_POINTER: ;
+            // A atribuição está indo para um array
+            // O índice do array fica no topo da pilha.
             int idx = _frame_stack_pop(current_frame);
             int val = _frame_stack_pop(current_frame);
             
@@ -561,6 +595,9 @@ static void _run_assign (AST *assign) {
     }
 }
 
+/**
+ * Exibe os caracteres especiais \n e \r corretamente
+ */
 static char const *_print_special_char (char const *ch) {
     char p = *ch;
 
@@ -618,10 +655,12 @@ static void _run_var_use (AST *var_node) {
 
     switch(var->type) {
         case VT_INT:
+            // Acesso a uma variável comum
             _frame_stack_push(current_frame, *(current_frame->store[var->frame_offset]));
             break;
         case VT_ARRAY:
         case VT_ARRAY_POINTER: ;
+            // Acesso a um array. Índice no topo da pilha.
             int idx = _frame_stack_pop(current_frame);
             _frame_stack_push(current_frame, current_frame->store[var->frame_offset][idx]);
             break;
@@ -650,32 +689,41 @@ static void _run_fcall (AST *fcall) {
     // Obtém o nó da AST correspondente à função que será invocada
     ft_node_t *fn_t = AST_GET_NODE_DATA(fcall);
     AST *fn = fn_t->ast_fn_node;
+
+    // Lista de parâmetros da função alvo
     AST *fn_header = fn->getChildren(fn);
     AST *param_list = fn_header->getChildren(fn_header)->next_sibiling;
 
+    // Inicializa um frame novo
     struct frame_t *frame = _initialize_frame(fn);
 
+    // arg-list da função alvo
     AST *arg_list = fcall->getChildren(fcall);
     AST *arg = NULL;
     AST *param = NULL;
 
     for(arg = arg_list->getChildren(arg_list), param = param_list->getChildren(param_list); arg != NULL; arg = arg->next_sibiling, param = param->next_sibiling) {
         // Aqui podem haver diversos tipos de argumentos
-        // Inicialmente consideramos uma chamada vazia
         switch(AST_GET_NODE_TYPE(arg)) {
             case AST_NODE_NUM: { //hack
+                // O argumento é um número.
+                // Seu valor está no própio nó da AST.
                 vt_node_t *var = AST_GET_NODE_DATA(param);
                 int *val = AST_GET_NODE_DATA(arg);
 
                 *(frame->store[var->frame_offset]) = *val;
                 break;
             } case AST_NODE_VAR_USE: { //hack
+                // O argumento é uma variável.
+                // A variável pode ser uma variável comum,
+                // uma posição de um array ou um array passado
+                // por referência.
                 vt_node_t *called_var = AST_GET_NODE_DATA(param);
                 vt_node_t *callee_var = AST_GET_NODE_DATA(arg);
 
                 if(frame->owned_indexes[called_var->frame_offset] == true) {
                     // É uma variável local da função (não é passagem por referência)
-                    // A variável pode ser simples ou um índice de um array
+                    // A variável pode ser simples ou uma posição de um array
 
                     // Executa recursivamente o parâmetro para ver se aparece um índice 
                     // de acesso para array na pilha do frame atual.
@@ -691,7 +739,7 @@ static void _run_fcall (AST *fcall) {
                     }
 
                 } else {
-                    // Passagem por referência
+                    // Passagem por referência.
                     frame->store[called_var->frame_offset] = current_frame->store[callee_var->frame_offset];
                 }
                 break;
@@ -699,12 +747,12 @@ static void _run_fcall (AST *fcall) {
                 // O parâmetro passado é uma expressão que precisa ser avaliada
                 vt_node_t *called_var = AST_GET_NODE_DATA(param);
                 
-                // Avalia a expressão
+                // Avalia a expressão e coloca o resultado na pilha, caso haja.
                 _recursively_run_node(arg);
 
                 if(_frame_stack_is_empty(current_frame) == true) {
                     // Não acontece por conta da gramática
-                    printf("EXECUTION ERROR: passign 'void' expression to parameter '%s'\n", called_var->identifier);
+                    printf("EXECUTION ERROR: passing 'void' expression as the parameter '%s' to function '%s'\n", called_var->identifier, fn_t->identifier);
                     exit(1);
                 }
 
@@ -715,9 +763,14 @@ static void _run_fcall (AST *fcall) {
         }
     }
 
+    // Preparação para entrada no contexto da nova função.
+    // Modifica a referência global do frame atual.
     current_frame = frame;
 
+    // Empilha o novo frame.
     _push_frame(frame_stack, frame);
+
+    // Executa a função recursivamente.
     _run_func_body(fn_header->next_sibiling);
 
     // Desempilha o frame da funcão executada.
@@ -733,6 +786,7 @@ static void _run_fcall (AST *fcall) {
             exit(1);
         }
 
+        // De fato empilha o valor.
         _frame_stack_push(current_frame, _frame_stack_pop(frame));
     } else {
         if(fn_t->return_type == RT_INT) {
@@ -749,6 +803,9 @@ static void _run_fcall (AST *fcall) {
  * FIM DOS EXECUTORES RECURSIVOS
  * ============================= */
 
+/**
+ * Executa exclusivamente a função main
+ */
 static void _run_ast_sub (AST *main) {
     stdin = fopen(ctermid(NULL), "r");
     frame_stack = calloc(1, sizeof *frame_stack);
