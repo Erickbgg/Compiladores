@@ -1,0 +1,73 @@
+int sum (int x, int y, int z, int w[]) {
+    
+    write("x = ");
+    output(x);
+    write("\ny = ");
+    output(y);
+    write("\nz = ");
+    output(z);
+    write("\nw[5] = ");
+    output(w[5]);
+    write("\n");
+
+    return x + y + z + w[5];
+}
+
+void f (void) {
+    return 1;
+}
+
+int g (void) {
+
+}
+
+int h (void) {
+    int j[10];
+
+    return j;
+}
+
+void l (void) {
+
+}
+
+void main (void) {
+    int x;
+    int y;
+    int z;
+    int k[10];
+
+    x = 3;
+    k[5] = 4;
+    k[6] = k[5] + 6;
+    k[4] = k[6];
+
+    write("x = ");
+    output(x);
+    write("\n");
+
+    write("k[5] = ");
+    output(k[5]);
+    write("\n");
+    
+    write("k[6] = ");
+    output(k[6]);
+    write("\n");
+
+    write("k[4] = ");
+    output(k[4]);
+    write("\n");
+
+    k[0] = sum(5, x, k[4], k);
+
+    //k = k; //error (assigning arrays directly)
+    //output(k); // error (printing arrays directly)
+    // f(); // error (void function returning value)
+    // x = f(); //error (assigning variable with void function)
+    // g(); //error (int function without return)
+    // h(); //error (returning array directly)
+
+    write("k[0] = ");
+    output(k[0]);
+    write("\n");
+}
