@@ -62,4 +62,6 @@ void free_variable (void const *);
 
 void variable_set_frame_offset (vt_node_t *, unsigned int);
 
+bool variable_is_array (vt_node_t *);
+
 #endif

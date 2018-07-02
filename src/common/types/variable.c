@@ -76,3 +76,7 @@ void free_variable (void const *variable) {
 void variable_set_frame_offset (vt_node_t *var, unsigned int offset) {
     var->frame_offset = offset;
 }
+
+bool variable_is_array (vt_node_t *var) {
+    return var->type == VT_ARRAY || var->type == VT_ARRAY_POINTER;
+}
